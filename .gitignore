@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Node
+node_modules/
+.next/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Trained models (added manually, keep out of git)
+backend/models_app/foot/*
+backend/models_app/neck/*
+backend/models_app/eye/*
+!backend/models_app/foot/README.md
+!backend/models_app/foot/labels.example.json
+!backend/models_app/neck/README.md
+!backend/models_app/neck/labels.example.json
+!backend/models_app/eye/README.md
+!backend/models_app/eye/labels.example.json
+
+# Generated
+backend/results/

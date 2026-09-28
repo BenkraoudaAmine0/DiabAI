@@ -1,0 +1,4 @@
+{
+  "labels": ["No DR", "Mild", "Moderate", "Severe", "Proliferative DR"],
+  "image_size": 224
+}

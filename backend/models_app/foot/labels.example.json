@@ -1,0 +1,4 @@
+{
+  "labels": ["no_ulcer", "ulcer"],
+  "image_size": 224
+}
