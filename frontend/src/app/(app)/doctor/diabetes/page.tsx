@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
-import type { PredictionResult } from "@/lib/types";
-import ResultCard from "@/components/ResultCard";
+import type { PredictionReport, PredictionResult } from "@/lib/types";
 
 interface PanelOption {
   id: string;
@@ -14,33 +13,61 @@ interface PanelOption {
   email: string | null;
 }
 
-export default function DiabetesPage() {
+const EMPTY_FORM = {
+  gender: "male",
+  age: "",
+  hypertension: false,
+  heart_disease: false,
+  smoking_history: "never",
+  bmi: "",
+  HbA1c_level: "",
+  blood_glucose_level: "",
+};
+
+// the model was trained on ever / former / not current as one category
+const FORMER_SMOKER = ["former", "ever", "not current"];
+
+function DiabetesForm() {
   const { t } = useI18n();
   const router = useRouter();
-  const [patients, setPatients] = useState<PanelOption[]>([]);
+  const from = useSearchParams().get("from"); // "Modify inputs" on a report
+  const [patients, setPatients] = useState<PanelOption[] | null>(null);
   const [patientId, setPatientId] = useState("");
-  const [form, setForm] = useState({
-    gender: "male",
-    age: "",
-    hypertension: false,
-    heart_disease: false,
-    smoking_history: "never",
-    bmi: "",
-    HbA1c_level: "",
-    blood_glucose_level: "",
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [prefilled, setPrefilled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<PredictionResult | null>(null);
 
   useEffect(() => {
     api<{ patients: PanelOption[] }>("/api/patients")
       .then((r) => {
         setPatients(r.patients);
-        if (r.patients.length > 0) setPatientId(r.patients[0].id);
+        if (r.patients.length > 0) setPatientId((id) => id || r.patients[0].id);
       })
       .catch(() => setPatients([]));
   }, []);
+
+  useEffect(() => {
+    if (!from) return;
+    api<PredictionReport>(`/api/diabetes/predictions/${from}`)
+      .then(({ prediction: { input } }) => {
+        setPatientId(input.patient_id);
+        setForm({
+          gender: input.gender,
+          age: String(input.age),
+          hypertension: input.hypertension,
+          heart_disease: input.heart_disease,
+          smoking_history: FORMER_SMOKER.includes(input.smoking_history)
+            ? "former"
+            : input.smoking_history,
+          bmi: String(input.bmi),
+          HbA1c_level: String(input.HbA1c_level),
+          blood_glucose_level: String(input.blood_glucose_level),
+        });
+        setPrefilled(true);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : t("common.error")));
+  }, [from, t]);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -51,7 +78,6 @@ export default function DiabetesPage() {
     if (!patientId) return;
     setBusy(true);
     setError(null);
-    setResult(null);
     try {
       const res = await api<PredictionResult>("/api/diabetes/predict", {
         method: "POST",
@@ -67,17 +93,19 @@ export default function DiabetesPage() {
           blood_glucose_level: Number(form.blood_glucose_level),
         }),
       });
-      setResult(res);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      router.push(`/predictions/${res.record_id}`);
     } catch (e2) {
       setError(e2 instanceof Error ? e2.message : t("common.error"));
-    } finally {
       setBusy(false);
     }
   }
 
   const inputCls =
     "w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100";
+
+  if (patients === null) {
+    return <p className="text-sm text-slate-500">{t("common.loading")}</p>;
+  }
 
   if (patients.length === 0 && !error) {
     return (
@@ -102,7 +130,11 @@ export default function DiabetesPage() {
         <p className="mt-1 text-sm text-slate-500">{t("diabetes.subtitle")}</p>
       </div>
 
-      {result && <ResultCard result={result} onNew={() => setResult(null)} />}
+      {prefilled && (
+        <p className="rounded-lg bg-teal-50 px-4 py-3 text-sm text-teal-700">
+          {t("diabetes.prefilled")}
+        </p>
+      )}
 
       <form
         onSubmit={submit}
@@ -166,8 +198,6 @@ export default function DiabetesPage() {
               <option value="No Info">{t("common.noInfo")}</option>
               <option value="current">{t("common.current")}</option>
               <option value="former">{t("common.former")}</option>
-              <option value="ever">{t("common.former")}</option>
-              <option value="not current">{t("common.former")}</option>
             </select>
           </label>
           <label className="block">
@@ -262,5 +292,14 @@ export default function DiabetesPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function DiabetesPage() {
+  const { t } = useI18n();
+  return (
+    <Suspense fallback={<p className="text-sm text-slate-500">{t("common.loading")}</p>}>
+      <DiabetesForm />
+    </Suspense>
   );
 }

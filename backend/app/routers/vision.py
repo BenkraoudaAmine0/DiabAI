@@ -60,7 +60,7 @@ async def scan(
 
     # Subject of the scan: patients scan themselves; doctors pick a patient.
     subject_id = user.id if user.role == "patient" else None
-    if user.role == "doctor" and patient_id is not None:
+    if user.role in ("doctor", "admin") and patient_id is not None:
         ensure_panel_link(user.id, str(patient_id))
         subject_id = str(patient_id)
 
@@ -97,7 +97,7 @@ async def scan(
             status_code=502, detail=f"Failed to save the scan: {exc}"
         ) from exc
 
-    if user.role == "doctor" and subject_id:  # doctor scanned for a patient
+    if user.role in ("doctor", "admin") and subject_id:  # scanned for a patient
         notify(
             subject_id,
             "scan_recorded",

@@ -52,6 +52,9 @@ function RegisterForm() {
         return;
       }
       setDone(true);
+    } catch (err) {
+      // e.g. Supabase not configured, or unreachable
+      setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setBusy(false);
     }

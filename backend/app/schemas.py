@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 
 Gender = Literal["male", "female"]
+Lang = Literal["en", "fr"]
 # Raw categories accepted from the form, mapped to the model's encoding:
 #   never | No Info -> non-smoker ; current -> current ; ever|former|not current -> past_smoker
 Smoking = Literal[
@@ -41,8 +42,21 @@ class PredictionResult(BaseModel):
     result_label: str  # "🔴 Diabetic" | "🟢 Non-Diabetic"
     risk_tier: str  # Low | Moderate | High | Critical | Prediabetic ⚠️
     top_factors: list[TopFactor]
+    factors: list[TopFactor] = []  # all 8, strongest first
+    threshold: Optional[float] = None
+    status: str = "pending"  # until the doctor confirms / rejects it
     waterfall_url: Optional[str] = None
     created_at: Optional[str] = None
+
+
+class ReviewRequest(BaseModel):
+    decision: Literal["confirmed", "rejected"]
+    note: Optional[str] = Field(default=None, max_length=2000)
+
+
+class InterpretationRequest(BaseModel):
+    lang: Lang = "en"
+    force: bool = False  # regenerate even if one exists in this language
 
 
 # ── vision scans ─────────────────────────────────────────────────────────────
@@ -91,6 +105,7 @@ class PatientCredentialsRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     session_id: Optional[UUID] = None
+    lang: Optional[Lang] = None  # UI language, for fixed replies
 
 
 class ChatSource(BaseModel):
@@ -98,6 +113,9 @@ class ChatSource(BaseModel):
     title: str
     excerpt: str
     similarity: float
+    page: Optional[str] = None  # printed page label or PDF page number
+    chapter: Optional[str] = None
+    content_type: Optional[str] = None  # "table" | "figure" | None (text)
 
 
 class ChatResponse(BaseModel):
