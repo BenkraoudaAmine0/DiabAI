@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC = ["/", "/login", "/register"];
+// /auth/set-password: invitation & reset links — the session is only in the
+// URL fragment, which the server never sees, so it must not redirect.
+const PUBLIC = ["/", "/login", "/register", "/auth/set-password"];
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 
 import Logo from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { LangToggle, useI18n } from "@/i18n";
+import { RECOVERY_FLAG, readSession } from "@/lib/authFlow";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const FEATURES = [
   { key: "f1", icon: "🩺" },
@@ -17,6 +20,25 @@ const FEATURES = [
 export default function Landing() {
   const { t } = useI18n();
   const { session, profile } = useAuth();
+
+  // Invitation / reset links land here instead of /auth/set-password when
+  // that URL isn't in Supabase's Redirect URLs (it falls back to the Site
+  // URL) — pass them on, or the patient ends up signed out with no password.
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const type = hash.get("type");
+    if (type === "invite" || type === "recovery" || hash.get("error_code")) {
+      window.location.replace(`/auth/set-password${window.location.hash}`);
+      return;
+    }
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (code && readSession(RECOVERY_FLAG) === "1") {
+      // PKCE reset: the client exchanges the code while it initialises
+      getSupabaseBrowserClient()
+        .auth.getSession()
+        .then(() => window.location.replace("/auth/set-password"));
+    }
+  }, []);
 
   const homeHref = session
     ? profile?.role === "admin"

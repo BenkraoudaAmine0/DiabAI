@@ -22,12 +22,36 @@ class Settings(BaseSettings):
     gemini_embedding_model: str = "gemini-embedding-001"
     embedding_dimensions: int = 768
 
+    # Knowledge-base embeddings: "local" (free, on this machine, no rate
+    # limits) or "gemini" (API). Questions and documents must use the same
+    # model — see app/services/embeddings.py.
+    embedding_provider: str = "local"
+    local_embedding_model: str = "google/embeddinggemma-300m"  # 768-d, multilingual
+    local_embedding_dir: str = "models_app/embeddings"  # downloaded once (~1.2 GB)
+
     # USD per million tokens — adjust to your actual Google AI pricing
     gemini_input_price_per_mtok: float = 0.10
     gemini_output_price_per_mtok: float = 0.40
     gemini_embedding_price_per_mtok: float = 0.15
 
+    # Knowledge base (RAG)
+    # Chunks below this cosine similarity are not sent to the model. 0 keeps
+    # the previous behaviour (always top-k); tune on real questions (~0.5).
+    kb_min_similarity: float = 0.0
+    # Admin upload limits. Supabase Storage's free plan caps files at 50 MB.
+    kb_max_document_mb: int = 25
+    kb_max_book_mb: int = 100
+    # Tables are always extracted. Images (figures, charts, scanned pages) are
+    # read by GEMINI_MODEL — one call each, capped per document so a book full
+    # of pictures can't burn through the API quota. 0 disables image reading.
+    kb_max_vision_calls: int = 60
+    kb_min_image_px: int = 120  # skip icons, bullets and rules smaller than this
+
     # App
+    # Public URL of the frontend: invitation and password-reset emails link to
+    # {frontend_url}/auth/set-password (add it to Supabase → Auth → URL
+    # Configuration → Redirect URLs).
+    frontend_url: str = "http://localhost:3000"
     cors_origins: str = "http://localhost:3000"
     signed_url_ttl: int = 60 * 60 * 24  # 24h
 

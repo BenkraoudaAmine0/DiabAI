@@ -51,19 +51,32 @@ class GeminiUsageCallback(BaseCallbackHandler):
     """LangChain callback: captures token usage from on_llm_end and writes one
     gemini_usage row per generation."""
 
-    def __init__(self, user_id: Optional[str] = None, model: str = ""):
+    def __init__(
+        self,
+        user_id: Optional[str] = None,
+        model: str = "",
+        detail: Optional[dict] = None,
+    ):
         self.user_id = user_id
         self.model = model or get_settings().gemini_model
+        self.detail = detail
 
     def on_llm_end(self, response: Any, **kwargs: Any) -> None:
         try:
-            usage = (getattr(response, "llm_output", None) or {}).get("token_usage") or {}
-            input_tokens = int(
-                usage.get("prompt_tokens") or usage.get("prompt_token_count") or 0
+            # ChatGoogleGenerativeAI reports usage on the message
+            # (AIMessage.usage_metadata); llm_output has no token counts.
+            input_tokens = output_tokens = 0
+            for generations in getattr(response, "generations", None) or []:
+                for gen in generations:
+                    usage = getattr(getattr(gen, "message", None), "usage_metadata", None) or {}
+                    input_tokens += int(usage.get("input_tokens") or 0)
+                    output_tokens += int(usage.get("output_tokens") or 0)
+            if not (input_tokens or output_tokens):  # other providers / older versions
+                usage = (getattr(response, "llm_output", None) or {}).get("token_usage") or {}
+                input_tokens = int(usage.get("prompt_tokens") or 0)
+                output_tokens = int(usage.get("completion_tokens") or 0)
+            log_usage(
+                self.user_id, "generate", self.model, input_tokens, output_tokens, self.detail
             )
-            output_tokens = int(
-                usage.get("completion_tokens") or usage.get("candidates_token_count") or 0
-            )
-            log_usage(self.user_id, "generate", self.model, input_tokens, output_tokens)
         except Exception:
             pass

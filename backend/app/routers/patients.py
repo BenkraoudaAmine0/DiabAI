@@ -8,6 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth import AuthUser, require_doctor
+from app.config import get_settings
 from app.schemas import (
     CreatePatientRequest,
     CreatePatientResponse,
@@ -75,8 +76,19 @@ def create_patient(
     svc = get_service_client()
 
     if req.method == "invite":
+        # The link lands on the frontend's set-password page (the patient has
+        # no password yet). That URL must be allowed in Supabase → Auth → URL
+        # Configuration → Redirect URLs, otherwise Supabase falls back to the
+        # Site URL — the landing page then forwards the link (see app/page.tsx).
         try:
-            res = svc.auth.admin.invite_user_by_email(req.email)
+            res = svc.auth.admin.invite_user_by_email(
+                req.email,
+                {
+                    "redirect_to": f"{get_settings().frontend_url.rstrip('/')}"
+                    "/auth/set-password",
+                    "data": {"full_name": req.full_name, "role": "patient"},
+                },
+            )
         except Exception as exc:
             if _is_duplicate(exc):
                 raise HTTPException(
@@ -94,8 +106,8 @@ def create_patient(
             patient_id=UUID(patient_id),
             method="invite",
             email=req.email,
-            message="Invitation sent — the patient sets their own password "
-            "from the link in the email.",
+            message="Invitation sent — the patient opens the link in the "
+            "email, creates a password, then signs in.",
         )
 
     # temp_password

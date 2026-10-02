@@ -2,14 +2,20 @@
 
 LangChain's stock SupabaseVectorStore assumes a table with (content,
 embedding, metadata) columns and calls the match RPC with a `query_count`
-argument. Our schema (see supabase/migrations/0001_init.sql) is:
+argument. Our schema (see supabase/migrations/0001_init.sql + 0004) is:
 
-    kb_chunks(id, document_id, chunk_index, content, embedding vector(768))
-    match_kb_chunks(query_embedding vector, match_count int) -> (…, title, similarity)
+    kb_chunks(id, document_id, chunk_index, content, embedding vector(768),
+              metadata jsonb)
+    match_kb_chunks_v3(query_embedding, match_count, min_similarity,
+                       document_ids, model_id)
+        -> (…, title, kind, metadata, similarity)            (migration 0008)
 
-The schema and the RPC must NOT change, so this subclass maps inserts to the
-real columns and the search to the real RPC argument names. It is still a
-SupabaseVectorStore — from_documents / similarity_search all work.
+This subclass maps inserts to the real columns (document_id / chunk_index
+become columns, any other metadata such as page / chapter goes to the
+`metadata` jsonb) and the search to the real RPC argument names. It is still
+a SupabaseVectorStore — from_documents / similarity_search all work, and
+`score_threshold` / `filter={"document_ids": [...], "embedding_model": ...}`
+are honoured.
 """
 
 from typing import Any, Iterable, List, Optional, Tuple
@@ -18,6 +24,7 @@ from langchain_community.vectorstores import SupabaseVectorStore
 from langchain_core.documents import Document
 
 BATCH = 500  # PostgREST max rows per request
+COLUMN_KEYS = ("document_id", "chunk_index")  # metadata keys stored as columns
 
 
 class DiabAIVectorStore(SupabaseVectorStore):
@@ -35,7 +42,7 @@ class DiabAIVectorStore(SupabaseVectorStore):
         metadatas: Optional[List[dict]] = None,
         client: Any = None,
         table_name: str = "kb_chunks",
-        query_name: str = "match_kb_chunks",
+        query_name: str = "match_kb_chunks_v3",
         chunk_size: int = BATCH,
         **kwargs: Any,
     ) -> "DiabAIVectorStore":
@@ -82,6 +89,12 @@ class DiabAIVectorStore(SupabaseVectorStore):
                     "embedding": vector,
                     "document_id": (meta or {}).get("document_id"),
                     "chunk_index": int((meta or {}).get("chunk_index", 0)),
+                    "metadata": {
+                        k: v
+                        for k, v in (meta or {}).items()
+                        if k not in COLUMN_KEYS and v is not None
+                    }
+                    or None,
                 }
                 for text, vector, meta in zip(
                     texts[start : start + BATCH],
@@ -94,13 +107,23 @@ class DiabAIVectorStore(SupabaseVectorStore):
         return all_ids
 
     def similarity_search_by_vector_with_relevance_scores(
-        self, embedding: List[float], k: int = 4, **kwargs: Any
+        self,
+        embedding: List[float],
+        k: int = 4,
+        filter: Optional[dict] = None,
+        score_threshold: Optional[float] = None,
+        **kwargs: Any,
     ) -> List[Tuple[Document, float]]:
-        # our RPC: match_kb_chunks(query_embedding, match_count)
-        res = self._client.rpc(
-            self.query_name,
-            {"query_embedding": embedding, "match_count": k},
-        ).execute()
+        # our RPC: match_kb_chunks_v3(query_embedding, match_count,
+        #                             min_similarity, document_ids, model_id)
+        params: dict = {"query_embedding": embedding, "match_count": k}
+        if score_threshold is not None:
+            params["min_similarity"] = float(score_threshold)
+        if filter and filter.get("document_ids"):
+            params["document_ids"] = [str(i) for i in filter["document_ids"]]
+        if filter and filter.get("embedding_model"):
+            params["model_id"] = str(filter["embedding_model"])
+        res = self._client.rpc(self.query_name, params).execute()
         docs: List[Tuple[Document, float]] = []
         for row in res.data or []:
             docs.append(
@@ -108,7 +131,9 @@ class DiabAIVectorStore(SupabaseVectorStore):
                     Document(
                         page_content=row.get("content", ""),
                         metadata={
+                            **(row.get("metadata") or {}),  # page / chapter
                             "title": row.get("title") or "Diabetes knowledge base",
+                            "kind": row.get("kind") or "document",
                             "document_id": str(row.get("document_id", "")),
                             "similarity": float(row.get("similarity") or 0.0),
                         },

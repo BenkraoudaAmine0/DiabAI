@@ -2,24 +2,11 @@
 
 import { useEffect, useState } from "react";
 
+import KnowledgeBasePanel from "@/components/KnowledgeBasePanel";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
+import { formatDateTime as fmt, humanSize } from "@/lib/format";
 import type { AdminStats, AdminUser, Role } from "@/lib/types";
-
-function humanSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
-  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
-}
-
-function fmt(iso: string | null, lang: string): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString(lang === "fr" ? "fr-FR" : "en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
 
 const ROLE_BADGE: Record<string, string> = {
   doctor: "bg-teal-100 text-teal-700",
@@ -164,6 +151,9 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* knowledge base: upload documents & books for the chatbot */}
+      <KnowledgeBasePanel />
 
       {/* users */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

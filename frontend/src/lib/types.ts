@@ -18,6 +18,8 @@ export interface TopFactor {
   direction: string;
 }
 
+export type ReviewStatus = "pending" | "confirmed" | "rejected";
+
 export interface PredictionResult {
   record_id: string;
   probability: number;
@@ -26,19 +28,86 @@ export interface PredictionResult {
   result_label: string;
   risk_tier: string;
   top_factors: TopFactor[];
+  factors: TopFactor[];
+  threshold: number | null;
+  status: ReviewStatus;
   waterfall_url: string | null;
   created_at: string | null;
 }
 
-export interface PredictionRow extends Partial<PredictionResult> {
+export interface PredictionInput {
+  patient_id: string;
+  gender: "male" | "female";
+  age: number;
+  hypertension: boolean;
+  heart_disease: boolean;
+  smoking_history: string;
+  bmi: number;
+  HbA1c_level: number;
+  blood_glucose_level: number;
+}
+
+/** A predictions row as returned by the history endpoints. */
+export interface PredictionRow {
   id: string;
   patient_id: string;
   doctor_id: string;
-  input: Record<string, unknown>;
+  input: PredictionInput;
+  probability: number;
+  prediction: number;
+  risk_tier: string;
+  top_factors: TopFactor[] | null; // all factors, strongest first
+  status?: ReviewStatus; // missing before migration 0006
   waterfall_path?: string | null;
+  waterfall_url?: string | null;
   created_at: string;
   doctor?: { full_name: string | null } | null;
   patient?: { full_name: string | null } | null;
+}
+
+export type ValueStatus = "normal" | "elevated" | "high";
+
+export interface ClinicalValue {
+  key: string;
+  value: number | boolean | string;
+  unit: string | null;
+  status: ValueStatus;
+}
+
+/** GET /api/diabetes/predictions/{id} */
+export interface PredictionReport {
+  prediction: {
+    id: string;
+    patient_id: string;
+    doctor_id: string;
+    input: PredictionInput;
+    probability: number;
+    probability_pct: string;
+    prediction: number;
+    result_label: string;
+    risk_tier: string;
+    status: ReviewStatus;
+    review_note: string | null;
+    reviewed_at: string | null;
+    reviewer_name: string | null;
+    doctor_name: string | null;
+    interpretation: string | null;
+    interpretation_lang: "en" | "fr" | null;
+    factors: TopFactor[];
+    top_factors: TopFactor[];
+    threshold: number | null;
+    values: ClinicalValue[];
+    waterfall_url: string | null;
+    created_at: string;
+  };
+  patient: {
+    id: string;
+    full_name?: string | null;
+    email?: string | null;
+    sex?: "male" | "female" | null;
+    dob?: string | null;
+  };
+  can_review: boolean;
 }
 
 export interface ScanResult {
@@ -69,10 +138,20 @@ export interface PanelPatient extends Profile {
   record_counts: { predictions: number; scans: number };
 }
 
+export interface ChatSource {
+  index: number;
+  title: string;
+  excerpt: string;
+  similarity: number;
+  page?: string | null; // PDF sources: printed page label or page number
+  chapter?: string | null; // books (PDF outline / EPUB table of contents)
+  content_type?: "table" | "figure" | null; // null = running text
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-  sources?: { index: number; title: string; excerpt: string; similarity: number }[] | null;
+  sources?: ChatSource[] | null;
   created_at: string;
 }
 
@@ -99,6 +178,41 @@ export interface AdminStats {
     embedding: UsageSummary;
     last_call: string | null;
   };
+}
+
+export type KbKind = "document" | "book";
+export type KbStatus = "processing" | "ready" | "failed";
+
+export interface KbDocument {
+  id: string;
+  title: string;
+  kind: KbKind;
+  status: KbStatus;
+  error: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  author: string | null;
+  page_count: number | null;
+  chunk_count: number | null;
+  chunks_embedded: number;
+  storage_path: string | null;
+  // what was read besides the text (migration 0005)
+  extraction?: {
+    tables: number;
+    figures: number;
+    ocr_pages: number;
+    images_skipped: number;
+  } | null;
+  // model that embedded it, e.g. "local:google/embeddinggemma-300m" (0008)
+  embedding_model?: string | null;
+  created_at: string;
+  uploader?: { full_name: string | null } | null;
+}
+
+export interface KbLimits {
+  document_mb: number;
+  book_mb: number;
 }
 
 export interface AdminUser {

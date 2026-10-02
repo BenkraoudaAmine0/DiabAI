@@ -2,11 +2,7 @@
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-/** Fetch wrapper for the FastAPI backend — attaches the Supabase token. */
-export async function api<T = unknown>(
-  path: string,
-  init: RequestInit = {}
-): Promise<T> {
+async function request(path: string, init: RequestInit = {}): Promise<Response> {
   const supabase = getSupabaseBrowserClient();
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -31,5 +27,27 @@ export async function api<T = unknown>(
     }
     throw new Error(detail);
   }
+  return res;
+}
+
+/** Fetch wrapper for the FastAPI backend — attaches the Supabase token. */
+export async function api<T = unknown>(
+  path: string,
+  init: RequestInit = {}
+): Promise<T> {
+  const res = await request(path, init);
   return res.json() as Promise<T>;
+}
+
+/** Downloads a file from the backend (e.g. a PDF report) under `filename`. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const blob = await (await request(path)).blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

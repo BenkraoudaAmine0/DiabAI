@@ -15,16 +15,27 @@ def my_records(user: AuthUser = Depends(get_current_user)) -> dict:
     svc = get_service_client()
 
     if user.role == "patient":
-        preds = (
+        # only predictions a doctor confirmed (migration 0006); before that
+        # migration there is no review step and every record is shown
+        query = (
             svc.table("predictions")
             .select("*, doctor:profiles!predictions_doctor_id_fkey(full_name)")
             .eq("patient_id", user.id)
             .order("created_at", desc=True)
-            .execute()
         )
+        try:
+            preds = query.eq("status", "confirmed").execute()
+        except Exception:
+            preds = (
+                svc.table("predictions")
+                .select("*, doctor:profiles!predictions_doctor_id_fkey(full_name)")
+                .eq("patient_id", user.id)
+                .order("created_at", desc=True)
+                .execute()
+            )
         scans = (
             svc.table("scans")
-            .select("storage_path, scan_type, result, created_at")
+            .select("id, storage_path, scan_type, result, created_at")
             .or_(f"patient_id.eq.{user.id},user_id.eq.{user.id}")
             .order("created_at", desc=True)
             .execute()

@@ -2,17 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import PredictionCard from "@/components/PredictionCard";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import type { PredictionRow, ScanRow } from "@/lib/types";
-
-const TIER_STYLES: Record<string, string> = {
-  Low: "bg-emerald-100 text-emerald-700",
-  Moderate: "bg-amber-100 text-amber-700",
-  High: "bg-orange-100 text-orange-700",
-  Critical: "bg-red-100 text-red-700",
-  "Prediabetic ⚠️": "bg-yellow-100 text-yellow-800",
-};
 
 const SCAN_ICONS: Record<string, string> = { foot: "🦶", neck: "🧣", eye: "👁" };
 
@@ -57,43 +50,9 @@ export default function PatientHistoryPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          {/* only predictions the doctor confirmed reach this list */}
           {predictions.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    🩺 {t("nav.diabetes")}
-                  </p>
-                  <p className="text-xl font-bold text-slate-900">
-                    {((p.probability ?? 0) * 100).toFixed(1)}%{" "}
-                    <span className="text-sm font-semibold text-slate-600">
-                      {(p.prediction ?? 0) === 1 ? "🔴 Diabetic" : "🟢 Non-Diabetic"}
-                    </span>
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    TIER_STYLES[p.risk_tier ?? ""] ?? "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {p.risk_tier}
-                </span>
-              </div>
-              {p.waterfall_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.waterfall_url}
-                  alt="SHAP explanation"
-                  className="mt-3 w-full rounded-xl border border-slate-100"
-                />
-              )}
-              <p className="mt-3 text-xs text-slate-400">
-                {t("history.doctor")}: {p.doctor?.full_name ?? "—"} · {fmt(p.created_at)}
-              </p>
-            </div>
+            <PredictionCard key={p.id} prediction={p} showStatus={false} />
           ))}
 
           {scans.map((s) => (

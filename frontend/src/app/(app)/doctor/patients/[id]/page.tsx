@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 
+import PredictionCard from "@/components/PredictionCard";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import type { PredictionRow, ScanRow } from "@/lib/types";
@@ -21,14 +22,6 @@ interface RecordsResponse {
   predictions: PredictionRow[];
   scans: ScanRow[];
 }
-
-const TIER_STYLES: Record<string, string> = {
-  Low: "bg-emerald-100 text-emerald-700",
-  Moderate: "bg-amber-100 text-amber-700",
-  High: "bg-orange-100 text-orange-700",
-  Critical: "bg-red-100 text-red-700",
-  "Prediabetic ⚠️": "bg-yellow-100 text-yellow-800",
-};
 
 const SCAN_ICONS: Record<string, string> = { foot: "🦶", neck: "🧣", eye: "👁" };
 
@@ -74,54 +67,7 @@ export default function PatientDetailPage({
     ...predictions.map((p) => ({
       key: `pred-${p.id}`,
       at: p.created_at,
-      node: (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                {t("nav.diabetes")}
-              </p>
-              <p className="text-xl font-bold text-slate-900">
-                {((p.probability ?? 0) * 100).toFixed(1)}%{" "}
-                <span className="text-sm font-semibold text-slate-600">
-                  {p.prediction === 1 ? "🔴 Diabetic" : "🟢 Non-Diabetic"}
-                </span>
-              </p>
-            </div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                TIER_STYLES[p.risk_tier ?? ""] ?? "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {p.risk_tier}
-            </span>
-          </div>
-          {p.top_factors && p.top_factors.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {p.top_factors.map((f) => (
-                <li
-                  key={f.feature}
-                  className="rounded-full bg-slate-50 px-2.5 py-1 text-xs text-slate-600"
-                >
-                  {f.feature} <strong className={f.direction.includes("↑") ? "text-red-500" : "text-emerald-600"}>{f.direction}</strong>
-                </li>
-              ))}
-            </ul>
-          )}
-          {p.waterfall_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={p.waterfall_url}
-              alt="SHAP explanation"
-              className="mt-3 w-full rounded-xl border border-slate-100"
-            />
-          )}
-          <p className="mt-3 text-xs text-slate-400">
-            {t("history.doctor")}: {p.doctor?.full_name ?? "—"} ·{" "}
-            {fmtDate(p.created_at, lang)}
-          </p>
-        </div>
-      ),
+      node: <PredictionCard prediction={p} />,
     })),
     ...scans.map((s) => ({
       key: `scan-${s.id}`,
