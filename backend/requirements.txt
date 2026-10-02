@@ -38,3 +38,7 @@ opencv-python-headless
 tensorflow-cpu>=2.16
 opencv-python-headless
 numpy
+asyncio
+pymupdf
+reportlab
+fastembe
