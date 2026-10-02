@@ -41,4 +41,3 @@ numpy
 asyncio
 pymupdf
 reportlab
-fastembe
