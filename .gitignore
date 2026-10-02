@@ -27,3 +27,5 @@ backend/models_app/eye/*
 
 # Generated
 backend/results/
+# local embedding model, downloaded at first use (~1.2 GB)
+backend/models_app/embeddings/

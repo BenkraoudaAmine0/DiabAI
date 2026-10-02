@@ -14,7 +14,7 @@ export default function AuthedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, profileError, loading, signOut } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
@@ -34,6 +34,30 @@ export default function AuthedLayout({
       router.replace(profile.role === "admin" ? "/admin/dashboard" : "/doctor/dashboard");
     }
   }, [loading, session, profile, pathname, router]);
+
+  // signed in, but no profile row: without this the spinner never stops
+  if (session && !loading && !profile && profileError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <h1 className="text-lg font-bold text-slate-900">{t("auth.noProfileTitle")}</h1>
+          <p className="mt-2 text-sm text-slate-600">{t("auth.noProfileDesc")}</p>
+          <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-500">
+            {profileError}
+          </p>
+          <button
+            onClick={async () => {
+              await signOut();
+              router.push("/login");
+            }}
+            className="mt-5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            {t("common.logout")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!session || loading || !profile) {
     return (

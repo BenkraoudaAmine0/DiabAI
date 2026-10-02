@@ -4,19 +4,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
-import type { ChatMessage } from "@/lib/types";
-
-interface Source {
-  index: number;
-  title: string;
-  excerpt: string;
-  similarity: number;
-}
+import type { ChatMessage, ChatSource } from "@/lib/types";
 
 interface ChatResponse {
   session_id: string;
   answer: string;
-  sources: Source[];
+  sources: ChatSource[];
 }
 
 /** Renders [1]-style citations in the answer as clickable chips. */
@@ -44,8 +37,11 @@ function AnswerWithCitations({ text }: { text: string }) {
 }
 
 export default function ChatPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // one conversation = one session: the backend reads its history to
+  // understand follow-up questions
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,8 +65,9 @@ export default function ChatPage() {
     try {
       const res = await api<ChatResponse>("/api/chat", {
         method: "POST",
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, session_id: sessionId, lang }),
       });
+      setSessionId(res.session_id);
       setMessages((m) => [
         ...m,
         {
@@ -89,9 +86,24 @@ export default function ChatPage() {
 
   return (
     <div className="mx-auto flex h-[calc(100vh-9rem)] max-w-3xl flex-col space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{t("chat.title")}</h1>
-        <p className="mt-1 text-sm text-slate-500">{t("chat.subtitle")}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">{t("chat.title")}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t("chat.subtitle")}</p>
+        </div>
+        {messages.length > 0 && (
+          <button
+            onClick={() => {
+              setMessages([]);
+              setSessionId(null);
+              setError(null);
+            }}
+            disabled={busy}
+            className="shrink-0 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          >
+            + {t("chat.new")}
+          </button>
+        )}
       </div>
 
       <div className="scroll-slim flex-1 space-y-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5">
@@ -127,6 +139,17 @@ export default function ChatPage() {
                       >
                         <p className="font-semibold text-slate-700">
                           [{s.index}] {s.title}
+                          {s.chapter && (
+                            <span className="font-normal text-slate-500"> · {s.chapter}</span>
+                          )}
+                          {s.page && (
+                            <span className="font-normal text-slate-500"> · p. {s.page}</span>
+                          )}
+                          {s.content_type && (
+                            <span className="ml-1.5 rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-teal-700">
+                              {t(`chat.${s.content_type}`)}
+                            </span>
+                          )}
                           <span className="ml-2 font-normal text-slate-400">
                             {(s.similarity * 100).toFixed(0)}%
                           </span>

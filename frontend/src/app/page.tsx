@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 
 import Logo from "@/components/Logo";
@@ -17,6 +18,17 @@ const FEATURES = [
 export default function Landing() {
   const { t } = useI18n();
   const { session, profile } = useAuth();
+
+  // Invitation / reset links land here instead of /set-password when the
+  // callback URL isn't in Supabase's Redirect URLs (it falls back to the
+  // Site URL) — pass them on, or the patient ends up with no password.
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const type = hash.get("type");
+    if (type === "invite" || type === "recovery" || hash.get("error_code")) {
+      window.location.replace(`/set-password${window.location.hash}`);
+    }
+  }, []);
 
   const homeHref = session
     ? profile?.role === "admin"

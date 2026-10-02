@@ -1,5 +1,6 @@
 """DiabAI FastAPI entrypoint."""
 
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,12 +11,13 @@ from app.routers import (
     admin,
     chat,
     diabetes,
+    kb,
     notifications,
     patients,
     records,
     vision,
 )
-from app.services import diabetes_service, vision_service
+from app.services import diabetes_service, embeddings, kb_ingest_service, vision_service
 
 
 @asynccontextmanager
@@ -32,6 +34,30 @@ async def lifespan(app: FastAPI):
     for scan_type, ok in vision_service.availability().items():
         state = "OK" if ok else "not installed (503 until added)"
         print(f"[startup] vision/{scan_type}: {state}")
+
+    # The local embedding model takes seconds to load (and downloads ~1.2 GB
+    # the first time): load it in the background so the API is up at once.
+    print(f"[startup] embeddings: {embeddings.model_id()}")
+    if embeddings.is_local():
+        def warm_up() -> None:
+            try:
+                embeddings.get_embeddings()
+                print("[startup] embeddings: local model ready")
+            except Exception as exc:
+                print(f"[startup] embeddings: local model unavailable — {exc}")
+
+        threading.Thread(target=warm_up, daemon=True).start()
+
+    # Knowledge-base uploads cut off by the last shutdown can't resume
+    # (background tasks live in this process) — flag them for re-index.
+    try:
+        n = kb_ingest_service.fail_interrupted()
+        if n:
+            print(f"[startup] knowledge base: {n} interrupted upload(s) "
+                  "marked failed — re-index them from the admin dashboard")
+    except Exception as exc:
+        print(f"[startup] knowledge base: status check skipped — {exc} "
+              "(is migration 0005 applied?)")
     yield
 
 
@@ -58,6 +84,7 @@ app.include_router(patients.router, prefix="/api/patients", tags=["patients"])
 app.include_router(records.router, prefix="/api/records", tags=["records"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(kb.router, prefix="/api/admin/kb", tags=["knowledge-base"])
 app.include_router(
     notifications.router, prefix="/api/notifications", tags=["notifications"]
 )
