@@ -29,6 +29,7 @@ class Settings(BaseSettings):
 
     # App
     cors_origins: str = "http://localhost:3000"
+    frontend_url: str = "http://localhost:3000"  # invite-link redirect target
     signed_url_ttl: int = 60 * 60 * 24  # 24h
 
     @property

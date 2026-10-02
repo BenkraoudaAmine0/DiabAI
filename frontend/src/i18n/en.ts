@@ -75,6 +75,18 @@ const en: Record<string, string> = {
     "Account created! Check your inbox to confirm your email, then sign in.",
   "auth.invalid": "Invalid email or password",
   "auth.working": "Please wait…",
+  "auth.setPasswordTitle": "Set your password",
+  "auth.setPasswordSubtitle":
+    "Welcome to DiabAI! Create a password to secure your account.",
+  "auth.newPassword": "New password (min. 8 characters)",
+  "auth.confirmPassword": "Confirm password",
+  "auth.setPassword": "Save password",
+  "auth.passwordMismatch": "Passwords do not match",
+  "auth.passwordSet": "Password created — you are signed in!",
+  "auth.inviteWorking": "Validating your invitation…",
+  "auth.linkExpired": "This link is invalid or has expired",
+  "auth.linkExpiredDesc":
+    "Ask your doctor to send a new invitation, or sign in if you already set a password.",
 
   // doctor dashboard
   "dash.panel": "Patients in panel",
@@ -112,6 +124,11 @@ const en: Record<string, string> = {
     "Share this password with the patient now — it is shown only once.",
   "patients.predictions": "predictions",
   "patients.scans": "scans",
+  "patients.loginAccess": "Login access",
+  "patients.loginAccessDesc":
+    "Invite expired, or the patient forgot their password? Send a fresh login link or set a new temporary password.",
+  "patients.sendLoginLink": "Send login link",
+  "patients.setTempPassword": "Set temporary password",
 
   // diabetes form
   "diabetes.title": "Diabetes prediction",
@@ -156,6 +173,8 @@ const en: Record<string, string> = {
   "scan.again": "Scan another image",
   "scan.modelMissing": "This model is not installed on the server yet.",
   "scan.for": "Scan for",
+  "scan.uncertain": "Low confidence — treat as uncertain",
+  "scan.referable": "Referable DR",
 
   // history
   "history.title": "My history",
@@ -184,6 +203,17 @@ const en: Record<string, string> = {
   "profile.update": "Update",
   "profile.updated": "Password updated!",
   "profile.account": "Account created",
+
+  // notifications
+  "notif.title": "Notifications",
+  "notif.empty": "No notifications yet",
+  "notif.markAll": "Mark all read",
+  "notif.prediction_recorded": "{doctor} recorded a diabetes prediction for you",
+  "notif.scan_recorded": "{doctor} recorded a {scan} scan result for you",
+  "notif.panel_added": "{doctor} added you to their patient panel",
+  "scanShort.foot": "foot",
+  "scanShort.neck": "neck",
+  "scanShort.eye": "eye",
 
   // admin
   "admin.title": "Admin dashboard",

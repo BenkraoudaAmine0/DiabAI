@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.auth import AuthUser, require_doctor
 from app.schemas import DiabetesPredictRequest, PredictionResult
 from app.services import diabetes_service
+from app.services.notification_service import notify
 from app.services.panel import ensure_panel_link
 from app.services.supabase_client import get_service_client, signed_url
 
@@ -61,6 +62,14 @@ def predict_diabetes(
         raise HTTPException(
             status_code=502, detail=f"Failed to save the prediction: {exc}"
         ) from exc
+
+    notify(
+        str(req.patient_id),
+        "prediction_recorded",
+        {"doctor": user.full_name or "Your doctor"},
+        link="/patient/history",
+        actor_id=user.id,
+    )
 
     return PredictionResult(
         record_id=record_id,

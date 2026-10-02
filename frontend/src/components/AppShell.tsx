@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { LangToggle, useI18n } from "@/i18n";
 import Logo from "@/components/Logo";
+import NotificationBell from "@/components/NotificationBell";
 
 interface NavItem {
   href: string;
@@ -128,6 +129,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <LangToggle compact />
             <button
               onClick={handleLogout}

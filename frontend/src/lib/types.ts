@@ -44,9 +44,14 @@ export interface PredictionRow extends Partial<PredictionResult> {
 export interface ScanResult {
   scan_id: string;
   scan_type: string;
-  label: string;
+  label: string; // class name or "uncertain"
+  top_class?: string | null;
+  uncertain?: boolean;
   confidence: number;
   probabilities: Record<string, number>;
+  referable_dr_probability?: number | null;
+  referable_dr?: boolean | null;
+  disclaimer?: string | null;
   image_url: string | null;
   created_at: string | null;
 }
@@ -57,7 +62,16 @@ export interface ScanRow {
   patient_id: string | null;
   scan_type: "foot" | "neck" | "eye";
   storage_path: string;
-  result: { label?: string; confidence?: number; probabilities?: Record<string, number> } | null;
+  result: {
+    label?: string;
+    top_class?: string;
+    uncertain?: boolean;
+    confidence?: number;
+    probabilities?: Record<string, number>;
+    referable_dr_probability?: number;
+    referable_dr?: boolean;
+    disclaimer?: string;
+  } | null;
   created_at: string;
   image_url?: string;
   operator?: { full_name: string | null } | null;
@@ -79,6 +93,16 @@ export interface ChatMessage {
 export interface ChatSession {
   id: string;
   title: string | null;
+  created_at: string;
+}
+
+// ── notifications ────────────────────────────────────────────────────────────
+export interface NotificationItem {
+  id: string;
+  kind: "prediction_recorded" | "scan_recorded" | "panel_added";
+  data: Record<string, string>; // { doctor, scan? } — rendered client-side
+  link: string | null;
+  read: boolean;
   created_at: string;
 }
 

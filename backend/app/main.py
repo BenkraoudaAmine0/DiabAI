@@ -6,7 +6,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import admin, chat, diabetes, patients, records, vision
+from app.routers import (
+    admin,
+    chat,
+    diabetes,
+    notifications,
+    patients,
+    records,
+    vision,
+)
 from app.services import diabetes_service, vision_service
 
 
@@ -50,6 +58,9 @@ app.include_router(patients.router, prefix="/api/patients", tags=["patients"])
 app.include_router(records.router, prefix="/api/records", tags=["records"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(
+    notifications.router, prefix="/api/notifications", tags=["notifications"]
+)
 
 
 @app.get("/api/health")

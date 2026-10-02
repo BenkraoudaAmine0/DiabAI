@@ -20,7 +20,9 @@ numpy>=1.26
 matplotlib>=3.8
 pillow>=10.2
 onnxruntime>=1.17
+opencv-python-headless
 
-# Optional — install ONLY if your vision models use these formats:
-# tensorflow-cpu>=2.16        # for models_app/<name>/model.h5 or model.keras
-# torch>=2.2                  # for models_app/<name>/model.pt or model.pth (TorchScript)
+# Required for the bundled .h5 vision models (foot / eye):
+tensorflow-cpu>=2.16
+opencv-python-headless
+numpy

@@ -75,6 +75,18 @@ const fr: Record<string, string> = {
     "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse, puis connectez-vous.",
   "auth.invalid": "E-mail ou mot de passe invalide",
   "auth.working": "Veuillez patienter…",
+  "auth.setPasswordTitle": "Définir votre mot de passe",
+  "auth.setPasswordSubtitle":
+    "Bienvenue sur DiabAI ! Créez un mot de passe pour sécuriser votre compte.",
+  "auth.newPassword": "Nouveau mot de passe (min. 8 caractères)",
+  "auth.confirmPassword": "Confirmer le mot de passe",
+  "auth.setPassword": "Enregistrer le mot de passe",
+  "auth.passwordMismatch": "Les mots de passe ne correspondent pas",
+  "auth.passwordSet": "Mot de passe créé — vous êtes connecté !",
+  "auth.inviteWorking": "Validation de votre invitation…",
+  "auth.linkExpired": "Ce lien est invalide ou a expiré",
+  "auth.linkExpiredDesc":
+    "Demandez à votre médecin une nouvelle invitation, ou connectez-vous si vous avez déjà défini un mot de passe.",
 
   // doctor dashboard
   "dash.panel": "Patients suivis",
@@ -112,6 +124,11 @@ const fr: Record<string, string> = {
     "Communiquez ce mot de passe au patient maintenant — il ne sera plus affiché.",
   "patients.predictions": "prédictions",
   "patients.scans": "scans",
+  "patients.loginAccess": "Accès au compte",
+  "patients.loginAccessDesc":
+    "Invitation expirée ou mot de passe oublié ? Envoyez un nouveau lien de connexion ou définissez un mot de passe temporaire.",
+  "patients.sendLoginLink": "Envoyer un lien de connexion",
+  "patients.setTempPassword": "Définir un mot de passe temporaire",
 
   // diabetes form
   "diabetes.title": "Prédiction du diabète",
@@ -156,6 +173,8 @@ const fr: Record<string, string> = {
   "scan.again": "Scanner une autre image",
   "scan.modelMissing": "Ce modèle n'est pas encore installé sur le serveur.",
   "scan.for": "Scan pour",
+  "scan.uncertain": "Confiance faible — résultat incertain",
+  "scan.referable": "Rétinopathie référable",
 
   // history
   "history.title": "Mon historique",
@@ -184,6 +203,17 @@ const fr: Record<string, string> = {
   "profile.update": "Mettre à jour",
   "profile.updated": "Mot de passe mis à jour !",
   "profile.account": "Compte créé le",
+
+  // notifications
+  "notif.title": "Notifications",
+  "notif.empty": "Aucune notification",
+  "notif.markAll": "Tout marquer comme lu",
+  "notif.prediction_recorded": "{doctor} a enregistré une prédiction de diabète pour vous",
+  "notif.scan_recorded": "{doctor} a enregistré un résultat de scan {scan} pour vous",
+  "notif.panel_added": "{doctor} vous a ajouté à son panel de patients",
+  "scanShort.foot": "pied",
+  "scanShort.neck": "cou",
+  "scanShort.eye": "rétine",
 
   // admin
   "admin.title": "Tableau de bord admin",

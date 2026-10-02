@@ -64,14 +64,21 @@ DiabAI/
 1. Create a project at [supabase.com](https://supabase.com).
 2. SQL Editor → New query → paste **all** of
    `backend/supabase/migrations/0001_init.sql` → **Run**, then do the same
-   with `backend/supabase/migrations/0002_admin.sql`.
+   with `0002_admin.sql`, `0003_kb_index.sql` and `0004_notifications.sql`
+   (all in `backend/supabase/migrations/`).
    (0001 creates tables, RLS policies, the `match_kb_chunks` RPC and the
    `scans` / `kb-docs` buckets; 0002 adds the `gemini_usage` table that
-   powers the admin dashboard's usage & cost view.)
+   powers the admin dashboard; 0003 fixes the pgvector index; 0004 adds
+   the `notifications` table + Realtime publication for the in-app bell.)
 3. Project Settings → API: copy the **Project URL**, the **anon public key**
    and the **service_role key**.
 
 > **Auth settings:** Authentication → Providers → Email must be enabled.
+> **URL Configuration (Authentication → URL Configuration):** set **Site
+> URL** to `http://localhost:3000` and add to **Redirect URLs**:
+> `http://localhost:3000/auth/callback` and `http://localhost:3000/set-password`
+> (plus your production domain later). Without this, invite-email links
+> won't reach the set-password page.
 > Email confirmation: ON is recommended for public signups. The doctor-created
 > patient accounts (temp-password method) bypass confirmation automatically.
 
@@ -160,9 +167,11 @@ and asserts the tier logic.
 
 Doctors create patient accounts in **My patients → New patient**, choosing:
 
-- **Email invitation** — Supabase sends a link; the patient sets their own
-  password. (Uses Supabase's built-in SMTP, which is rate-limited on the
-  free tier — configure custom SMTP in Auth → SMTP for real use.)
+- **Email invitation** — Supabase sends a link that opens `/set-password`,
+  where the patient creates their own password and is signed in immediately.
+  The redirect target comes from `FRONTEND_URL` in `backend/.env`.
+  (Uses Supabase's built-in SMTP, which is rate-limited on the free tier —
+  configure custom SMTP in Auth → SMTP for real use.)
 - **Temporary password** — a 12-char password is generated via the Admin API
   and shown **once** on the doctor's screen with a copy button; the doctor
   shares it in person. The patient can change it later in Profile.
@@ -183,6 +192,17 @@ rendered as source chips. The pipeline is LangChain end-to-end:
 LCEL chain (`prompt | llm | StrOutputParser()`) for generation, with token
 usage logged per call. Sessions and messages persist per user. The bot
 answers in English or French (matching the question) and never diagnoses.
+
+### Notifications
+
+A bell in the top bar shows unread in-app notifications for every user,
+updated **live** via Supabase Realtime (with a 60s polling fallback).
+Triggered events: a doctor records a **diabetes prediction** or a **scan**
+for a patient → the patient is notified; a patient account is
+**created or linked** to a doctor's panel → the patient gets a welcome
+notification. Notification text is structured (`kind` + `data`), so titles
+render in the user's language (EN/FR). Clicking one navigates to the
+relevant page and marks it read; "Mark all read" clears the badge.
 
 ### Admin
 
