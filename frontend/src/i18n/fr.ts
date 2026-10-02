@@ -43,33 +43,97 @@ const fr: Record<string, string> = {
   "nav.neck": "Scan du cou",
   "nav.home": "Accueil",
 
-  // landing
-  "landing.heroTitle": "Détecter le diabète tôt. Dépister ses complications.",
+  // landing (mockup design)
+  "landing.badge": "Prise en charge connectée du diabète",
+  "landing.heroTitle": "L'IA au service des soins du diabète en Algérie",
   "landing.heroSubtitle":
-    "Prédiction du risque par machine learning, dépistage par vision par ordinateur (pied, cou, œil) et assistant IA avec sources — une seule plateforme pour médecins et patients.",
-  "landing.ctaDoctor": "Je suis médecin",
-  "landing.ctaPatient": "Je suis patient",
-  "landing.f1.title": "Prédiction du risque",
-  "landing.f1.desc": "Données cliniques en entrée, score de risque interprétable avec explications SHAP.",
-  "landing.f2.title": "Dépistage ulcère du pied",
-  "landing.f2.desc": "Envoyez une photo du pied — le modèle détecte les signes d'ulcère.",
-  "landing.f3.title": "Acanthosis nigricans",
-  "landing.f3.desc": "Une photo du cou dépiste ce signe précoce visible d'insulinorésistance.",
-  "landing.f4.title": "Gradation rétinopathie",
-  "landing.f4.desc": "Images rétiniennes gradées sur 5 niveaux (accès médecin).",
-  "landing.f5.title": "Assistant IA sourcé",
-  "landing.f5.desc": "Réponses fondées sur une base de connaissances, avec sources.",
+    "DiabAI aide les équipes soignantes à coordonner le suivi, à repérer les risques plus tôt et à rendre le parcours de chaque patient clair et actionnable.",
+  "landing.ctaModules": "Découvrir les modules de soins",
+  "landing.ctaNote": "Conçu pour les équipes soignantes algériennes",
+  "landing.panelEyebrow": "Une vue sécurisée",
+  "landing.panelTitle": "Suivi clinique, dépistage et alertes",
+  "landing.panel1": "Prédiction du risque diabète",
+  "landing.panel2": "Scans pied & cou",
+  "landing.panel3": "Gradation rétinopathie",
+  "landing.panel4": "Assistant IA sourcé",
+  "landing.bandTag": "Application algérienne — Données hébergées en Algérie",
+  "landing.bandPrivacy": "Confidentialité",
+  "landing.bandTerms": "Conditions",
+  "landing.bandContact": "Contact",
+  "landing.eyebrow": "Plateforme de soins DiabAI",
+  "landing.modulesTitle": "Six modules. Un parcours de soins continu.",
+  "landing.modulesDesc":
+    "Des outils conçus pour accompagner le suivi du diabète, de l'inscription initiale à l'analyse longitudinale.",
+  "landing.m1.title": "Panel patients",
+  "landing.m1.desc": "Un dossier longitudinal fiable pour chaque personne suivie.",
+  "landing.m2.title": "Prédiction du risque diabète",
+  "landing.m2.desc":
+    "Données cliniques en entrée, score de risque interprétable avec explications SHAP.",
+  "landing.m3.title": "Dépistage ulcère du pied",
+  "landing.m3.desc":
+    "Envoyez une photo du pied — le modèle détecte les signes d'ulcère.",
+  "landing.m4.title": "Dépistage acanthosis",
+  "landing.m4.desc":
+    "Une photo du cou dépiste ce signe précoce visible d'insulinorésistance.",
+  "landing.m5.title": "Gradation rétinopathie",
+  "landing.m5.desc":
+    "Images rétiniennes gradées sur 5 niveaux (accès médecin).",
+  "landing.m6.title": "Assistant IA sourcé",
+  "landing.m6.desc":
+    "Réponses fondées sur une base de connaissances fiable, avec sources.",
+  "landing.ctaTitle": "Rejoignez DiabAI dès aujourd'hui",
+  "landing.ctaDesc":
+    "Inscrivez-vous gratuitement en tant que professionnel de la santé pour tester le prototype étudiant et contribuer au futur de la diabétologie connectée en Algérie.",
+  "landing.ctaJoin": "Rejoignez DiabAI",
+  "landing.ctaContact": "Contacter l'équipe",
+  "landing.footerDesc":
+    "Plateforme d'aide à la décision clinique propulsée par l'intelligence artificielle pour la prise en charge du diabète.",
+  "landing.navTitle": "Navigation",
+  "landing.navFeatures": "Fonctionnalités",
+  "landing.navAbout": "À propos",
+  "landing.navModules": "Nos Modules",
+  "landing.navContact": "Nous Contacter",
+  "landing.legalTitle": "Légal & Conformité",
+  "landing.legal1": "Loi 18-07 (Protection des Données)",
+  "landing.legal2": "Données hébergées en Algérie",
+  "landing.legal3": "Conformité ANPDP",
+  "landing.legal4": "Charte Déontologique",
+  "landing.bottomNote":
+    "Application algérienne - Données hébergées en Algérie | Prototype étudiant - Usage académique uniquement.",
+  "landing.bottomCompliance":
+    "Conforme à la Loi 18-07 relative à la protection des personnes physiques dans le traitement des données de santé.",
+  "landing.copyright": "DiabAI. Projet Académique.",
 
   // auth
-  "auth.loginTitle": "Bon retour",
-  "auth.loginSubtitle": "Connectez-vous à votre compte DiabAI",
-  "auth.registerTitle": "Créer votre compte",
-  "auth.registerSubtitle": "Choisissez votre usage de DiabAI",
+  "auth.loginTitle": "Bon retour parmi nous",
+  "auth.loginSubtitle": "Connectez-vous pour accéder à votre espace de soins DiabAI.",
+  "auth.registerTitle": "Rejoindre DiabAI",
+  "auth.registerSubtitle":
+    "Choisissez votre rôle, renseignez vos informations et créez votre compte de soins protégé.",
   "auth.roleDoctor": "Médecin",
-  "auth.roleDoctorDesc": "Outils cliniques, panel patients, tous les dépistages",
+  "auth.roleDoctorDesc": "Gérer les patients et le suivi clinique",
   "auth.rolePatient": "Patient",
-  "auth.rolePatientDesc": "Auto-dépistages, historique et assistant IA",
-  "auth.noAccount": "Pas encore de compte ?",
+  "auth.rolePatientDesc": "Consulter et contribuer à mon parcours de soins",
+  "auth.registerEyebrow": "Créez votre accès sécurisé",
+  "auth.asLabel": "Je m'inscris en tant que",
+  "auth.terms":
+    "J'accepte les Conditions d'utilisation et reconnais avoir lu l'Avis de confidentialité.",
+  "auth.registerCta": "Créer un compte sécurisé",
+  "auth.stepsEyebrow": "Avant de continuer",
+  "auth.stepsTitle": "Un compte, le juste niveau d'accès.",
+  "auth.step1": "Choisissez Médecin ou Patient",
+  "auth.step2": "Complétez les champs liés à votre rôle",
+  "auth.step3": "Vérifiez votre e-mail et accédez en sécurité",
+  "auth.registerTrustTitle": "Conçu pour un usage responsable des données de santé",
+  "auth.registerTrustDesc":
+    "Votre compte utilise un accès adapté au rôle. Les données de santé sont hébergées en Algérie et traitées selon le cadre de confidentialité applicable.",
+  "auth.helpLabel": "Besoin d'aide pour vous inscrire ?",
+  "auth.helpLink": "Contacter l'assistance",
+  "register.namePlaceholder": "Votre nom complet",
+  "register.emailPlaceholder": "nom@exemple.dz",
+  "register.passwordLabel": "Créer un mot de passe",
+  "register.passwordPlaceholder": "8 caractères minimum",
+  "auth.noAccount": "Nouveau sur DiabAI ?",
   "auth.haveAccount": "Vous avez déjà un compte ?",
   "auth.checkEmail":
     "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse, puis connectez-vous.",
@@ -87,6 +151,32 @@ const fr: Record<string, string> = {
   "auth.linkExpired": "Ce lien est invalide ou a expiré",
   "auth.linkExpiredDesc":
     "Demandez à votre médecin une nouvelle invitation, ou connectez-vous si vous avez déjà défini un mot de passe.",
+
+  // login page (mockup design)
+  "login.eyebrow": "Accès clinique sécurisé",
+  "login.emailLabel": "Adresse e-mail",
+  "login.emailPlaceholder": "medecin@clinique.dz",
+  "login.passwordPlaceholder": "Saisissez votre mot de passe",
+  "login.remember": "Se souvenir de moi sur cet appareil",
+  "login.forgot": "Mot de passe oublié ?",
+  "login.forgotNeedEmail":
+    "Saisissez d'abord votre e-mail ci-dessus, puis cliquez à nouveau pour recevoir un lien.",
+  "login.forgotSent":
+    "Si un compte existe pour cet e-mail, un lien de réinitialisation vient d'être envoyé.",
+  "login.cta": "Se connecter en toute sécurité",
+  "login.trustTitle": "Vos données de santé restent protégées",
+  "login.trustDesc":
+    "Accès chiffré, autorisations par rôle et données hébergées en Algérie.",
+  "login.pitchEyebrow": "Continuité des soins",
+  "login.pitchTitle": "La bonne information, au bon moment pour décider.",
+  "login.pitchDesc":
+    "Retrouvez le suivi patient, les alertes de risque, les plans de traitement et l'analyse des soins dans un environnement sécurisé.",
+  "login.point1": "Accès adapté aux médecins et aux patients",
+  "login.point2": "Traçabilité claire de l'activité clinique",
+  "login.point3": "Conçu pour une aide clinique responsable",
+  "login.footerTag": "Application algérienne — Données hébergées en Algérie",
+  "login.privacy": "Confidentialité",
+  "login.support": "Assistance",
 
   // doctor dashboard
   "dash.panel": "Patients suivis",

@@ -43,33 +43,97 @@ const en: Record<string, string> = {
   "nav.neck": "Neck scan",
   "nav.home": "Home",
 
-  // landing
-  "landing.heroTitle": "Detect diabetes early. Screen its complications.",
+  // landing (mockup design)
+  "landing.badge": "Connected diabetes care",
+  "landing.heroTitle": "AI in the service of diabetes care in Algeria",
   "landing.heroSubtitle":
-    "Machine-learning risk prediction, computer-vision screening for foot, neck and eye complications, and a cited AI assistant — in one platform for doctors and patients.",
-  "landing.ctaDoctor": "I'm a doctor",
-  "landing.ctaPatient": "I'm a patient",
-  "landing.f1.title": "Diabetes risk prediction",
-  "landing.f1.desc": "Clinical data in, interpretable risk score with SHAP factor explanations out.",
-  "landing.f2.title": "Foot ulcer screening",
-  "landing.f2.desc": "Upload a foot photo — the model flags signs of diabetic ulcers.",
-  "landing.f3.title": "Acanthosis nigricans",
-  "landing.f3.desc": "A neck photo screens for the visible early sign of insulin resistance.",
-  "landing.f4.title": "Retinopathy grading",
-  "landing.f4.desc": "Fundus images graded across 5 severity levels (doctor access).",
-  "landing.f5.title": "Cited AI assistant",
-  "landing.f5.desc": "Answers grounded in a trusted diabetes knowledge base, with sources.",
+    "DiabAI helps care teams coordinate follow-up, spot risks earlier and make every patient's journey clear and actionable.",
+  "landing.ctaModules": "Explore the care modules",
+  "landing.ctaNote": "Built for Algerian care teams",
+  "landing.panelEyebrow": "A secure view",
+  "landing.panelTitle": "Clinical follow-up, screening and alerts",
+  "landing.panel1": "Diabetes risk prediction",
+  "landing.panel2": "Foot & neck scans",
+  "landing.panel3": "Retinopathy grading",
+  "landing.panel4": "Cited AI assistant",
+  "landing.bandTag": "Algerian application — Data hosted in Algeria",
+  "landing.bandPrivacy": "Privacy",
+  "landing.bandTerms": "Terms",
+  "landing.bandContact": "Contact",
+  "landing.eyebrow": "The DiabAI care platform",
+  "landing.modulesTitle": "Six modules. One continuous care journey.",
+  "landing.modulesDesc":
+    "Tools designed to support diabetes care, from initial enrolment to longitudinal analysis.",
+  "landing.m1.title": "Patient panel",
+  "landing.m1.desc": "A trusted longitudinal record for every patient you follow.",
+  "landing.m2.title": "Diabetes risk prediction",
+  "landing.m2.desc":
+    "Clinical data in, interpretable risk score with SHAP factor explanations out.",
+  "landing.m3.title": "Foot ulcer screening",
+  "landing.m3.desc":
+    "Upload a foot photo — the model flags signs of diabetic ulcers.",
+  "landing.m4.title": "Acanthosis screening",
+  "landing.m4.desc":
+    "A neck photo screens for the visible early sign of insulin resistance.",
+  "landing.m5.title": "Retinopathy grading",
+  "landing.m5.desc":
+    "Fundus images graded across 5 severity levels (doctor access).",
+  "landing.m6.title": "Cited AI assistant",
+  "landing.m6.desc":
+    "Answers grounded in a trusted knowledge base, with sources.",
+  "landing.ctaTitle": "Join DiabAI today",
+  "landing.ctaDesc":
+    "Sign up free as a healthcare professional to test the student prototype and help shape the future of connected diabetology in Algeria.",
+  "landing.ctaJoin": "Join DiabAI",
+  "landing.ctaContact": "Contact the team",
+  "landing.footerDesc":
+    "A clinical decision-support platform powered by artificial intelligence for diabetes care.",
+  "landing.navTitle": "Navigation",
+  "landing.navFeatures": "Features",
+  "landing.navAbout": "About",
+  "landing.navModules": "Our modules",
+  "landing.navContact": "Contact us",
+  "landing.legalTitle": "Legal & Compliance",
+  "landing.legal1": "Law 18-07 (Data Protection)",
+  "landing.legal2": "Data hosted in Algeria",
+  "landing.legal3": "ANPDP compliance",
+  "landing.legal4": "Ethics charter",
+  "landing.bottomNote":
+    "Algerian application - Data hosted in Algeria | Student prototype - Academic use only.",
+  "landing.bottomCompliance":
+    "Compliant with Law 18-07 on the protection of individuals in the processing of health data.",
+  "landing.copyright": "DiabAI. Academic Project.",
 
   // auth
   "auth.loginTitle": "Welcome back",
-  "auth.loginSubtitle": "Sign in to your DiabAI account",
-  "auth.registerTitle": "Create your account",
-  "auth.registerSubtitle": "Choose how you will use DiabAI",
+  "auth.loginSubtitle": "Sign in to access your DiabAI care space.",
+  "auth.registerTitle": "Join DiabAI",
+  "auth.registerSubtitle":
+    "Choose your role, fill in your details and create your protected care account.",
   "auth.roleDoctor": "Doctor",
-  "auth.roleDoctorDesc": "Clinical tools, patient panel, all screenings",
+  "auth.roleDoctorDesc": "Manage patients and clinical follow-up",
   "auth.rolePatient": "Patient",
-  "auth.rolePatientDesc": "Self-checks, history and AI assistant",
-  "auth.noAccount": "No account yet?",
+  "auth.rolePatientDesc": "View and contribute to my care journey",
+  "auth.registerEyebrow": "Create your secure access",
+  "auth.asLabel": "I'm signing up as",
+  "auth.terms":
+    "I accept the Terms of Use and acknowledge that I have read the Privacy Notice.",
+  "auth.registerCta": "Create your secure account",
+  "auth.stepsEyebrow": "Before you continue",
+  "auth.stepsTitle": "One account, the right level of access.",
+  "auth.step1": "Choose Doctor or Patient",
+  "auth.step2": "Complete the fields for your role",
+  "auth.step3": "Verify your email and sign in securely",
+  "auth.registerTrustTitle": "Designed for responsible use of health data",
+  "auth.registerTrustDesc":
+    "Your account uses role-based access. Health data is hosted in Algeria and processed under the applicable confidentiality framework.",
+  "auth.helpLabel": "Need help signing up?",
+  "auth.helpLink": "Contact support",
+  "register.namePlaceholder": "Your full name",
+  "register.emailPlaceholder": "name@example.dz",
+  "register.passwordLabel": "Create a password",
+  "register.passwordPlaceholder": "8 characters minimum",
+  "auth.noAccount": "New to DiabAI?",
   "auth.haveAccount": "Already have an account?",
   "auth.checkEmail":
     "Account created! Check your inbox to confirm your email, then sign in.",
@@ -87,6 +151,32 @@ const en: Record<string, string> = {
   "auth.linkExpired": "This link is invalid or has expired",
   "auth.linkExpiredDesc":
     "Ask your doctor to send a new invitation, or sign in if you already set a password.",
+
+  // login page (mockup design)
+  "login.eyebrow": "Secure clinic access",
+  "login.emailLabel": "Email address",
+  "login.emailPlaceholder": "you@clinic.com",
+  "login.passwordPlaceholder": "Enter your password",
+  "login.remember": "Remember me on this device",
+  "login.forgot": "Forgot password?",
+  "login.forgotNeedEmail":
+    "Enter your email above first, then click again to receive a reset link.",
+  "login.forgotSent":
+    "If an account exists for this email, a reset link has been sent.",
+  "login.cta": "Sign in securely",
+  "login.trustTitle": "Your health data stays protected",
+  "login.trustDesc":
+    "Encrypted access, role-based permissions and data hosted in Algeria.",
+  "login.pitchEyebrow": "Continuity of care",
+  "login.pitchTitle": "The right information, at the right moment to decide.",
+  "login.pitchDesc":
+    "Find patient follow-up, risk alerts, treatment plans and care analysis in a secure environment.",
+  "login.point1": "Access tailored for doctors and patients",
+  "login.point2": "Clear traceability of clinical activity",
+  "login.point3": "Built for responsible clinical support",
+  "login.footerTag": "Algerian application — Data hosted in Algeria",
+  "login.privacy": "Privacy",
+  "login.support": "Support",
 
   // doctor dashboard
   "dash.panel": "Patients in panel",
