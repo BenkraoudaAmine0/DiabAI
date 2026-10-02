@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- DiabAI 0005 — knowledge base: tables & images inside uploads
--- Run ONCE in Supabase SQL Editor (after 0004_kb_uploads.sql).
+-- DiabAI 0006 — knowledge base: tables & images inside uploads
+-- Run ONCE in Supabase SQL Editor (after 0005_kb_uploads.sql).
 --
 -- Additive only. Uploads are now read with their tables (Markdown) and
 -- images (figures, charts and scanned pages read by Gemini). This column

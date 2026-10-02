@@ -282,7 +282,7 @@ def ingest_document(
         if use_file_author and loaded.author:
             details["author"] = loaded.author.strip()[:200]
         _update(document_id, **details)
-        try:  # migration 0005 column — informative only, never fatal
+        try:  # migration 0006 column — informative only, never fatal
             _update(document_id, extraction=loaded.extraction.as_dict())
         except Exception:
             pass
@@ -308,7 +308,7 @@ def ingest_document(
             document_id,
             status="ready",
             error=None,
-            embedding_model=embeddings.model_id(),  # migration 0008
+            embedding_model=embeddings.model_id(),  # migration 0009
         )
 
         if not embeddings.is_local():  # the local model costs nothing

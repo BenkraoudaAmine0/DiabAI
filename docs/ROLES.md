@@ -11,7 +11,7 @@ the Supabase RLS policies protect direct reads from the browser.
 | Doctor  | Self-registration as "Doctor"                                                                                    |
 | Admin   | Only from the Supabase SQL Editor: `update public.profiles set role = 'admin' where email = 'you@example.com';` |
 
-Since migration `0007_role_hardening.sql`, nobody can give themselves the
+Since migration `0008_role_hardening.sql`, nobody can give themselves the
 admin role: signups can only be doctor or patient, and users can't edit
 their own `role` or `email` from the browser.
 
@@ -110,7 +110,7 @@ are read as running text.
   doctor account, and a doctor can add any patient to their panel by email
   and then read that patient's full history. Until doctor accounts need an
   admin's approval, review the Users table regularly.
-- After applying `0007_role_hardening.sql`, check the admin list once:
+- After applying `0008_role_hardening.sql`, check the admin list once:
   `select email, created_at from public.profiles where role = 'admin';`
 
 ---
@@ -120,6 +120,7 @@ are read as running text.
 | Can                                                                                       | Where                     |
 | ----------------------------------------------------------------------------------------- | ------------------------- |
 | Create patient accounts — email invitation or one-time temporary password                 | My patients → New patient |
+| Send a patient a new login link or temporary password (expired invite, forgotten password) | patient page → Login access |
 | Add an existing patient account to the panel (by email)                                   | My patients → Add existing |
 | See the full history of panel patients (predictions + scans, by any doctor)               | My patients → patient     |
 | Run a diabetes prediction                                                                 | Diabetes prediction       |
@@ -137,12 +138,13 @@ Patients only ever see **confirmed** predictions.
 
 | Can                                                                           | Where              |
 | ----------------------------------------------------------------------------- | ------------------ |
-| Activate an account a doctor created: the invitation email opens a page to create a password, then the patient signs in | email link → `/auth/set-password` |
+| Activate an account a doctor created: the invitation email opens a page to create a password, then the patient signs in | email link → `/set-password` |
 | Reset a forgotten password                                                    | Sign in → Forgot password? |
 | Foot and neck self-scans                                                      | Foot scan, Neck scan |
 | See own history: scans, and diabetes predictions **confirmed** by a doctor   | My history         |
 | Open a confirmed report and download it as PDF (read-only)                    | My history         |
 | Use the AI assistant, change password                                         | AI assistant, Profile |
+| Get notified when a doctor adds them, confirms a prediction or records a scan | bell icon |
 
 ## Permission matrix
 

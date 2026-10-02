@@ -8,14 +8,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth import AuthUser, require_doctor
-from app.config import get_settings
 from app.schemas import (
     CreatePatientRequest,
     CreatePatientResponse,
     LinkPatientRequest,
+    PatientCredentialsRequest,
 )
+from app.services.notification_service import notify
 from app.services.panel import get_profile, has_panel_link
-from app.services.supabase_client import get_service_client, signed_url
+from app.services.supabase_client import (
+    get_anon_client,
+    get_service_client,
+    signed_url,
+)
 
 router = APIRouter()
 
@@ -45,8 +50,42 @@ def _is_duplicate(err: Exception) -> bool:
     return "already" in msg or "registered" in msg or "exists" in msg
 
 
+def _duplicate_response(svc, email: str, doctor_id: str) -> HTTPException:
+    """Duplicate email — tailor the message to the doctor's relationship
+    with the existing account."""
+    try:
+        rows = (
+            svc.table("profiles")
+            .select("id, role")
+            .eq("email", email)
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+    except Exception:
+        rows = []
+    if rows and rows[0].get("role") == "patient" and has_panel_link(
+        doctor_id, rows[0]["id"]
+    ):
+        return HTTPException(
+            status_code=409,
+            detail="This patient is already in your panel — open their "
+            "page and use 'Login access' to send a new login link or "
+            "set a temporary password.",
+        )
+    return HTTPException(
+        status_code=409,
+        detail="An account with this email already exists — use "
+        "'Add existing patient' instead.",
+    )
+
+
 def _upsert_patient_profile(
-    patient_id: str, req: CreatePatientRequest, doctor_id: str
+    patient_id: str,
+    req: CreatePatientRequest,
+    doctor_id: str,
+    doctor_name: str,
 ) -> None:
     get_service_client().table("profiles").upsert(
         {
@@ -65,6 +104,13 @@ def _upsert_patient_profile(
         {"doctor_id": doctor_id, "patient_id": patient_id},
         on_conflict="doctor_id,patient_id",
     ).execute()
+    notify(
+        patient_id,
+        "panel_added",
+        {"doctor": doctor_name},
+        link="/patient",
+        actor_id=doctor_id,
+    )
 
 
 @router.post("", response_model=CreatePatientResponse)
@@ -76,38 +122,30 @@ def create_patient(
     svc = get_service_client()
 
     if req.method == "invite":
-        # The link lands on the frontend's set-password page (the patient has
-        # no password yet). That URL must be allowed in Supabase → Auth → URL
-        # Configuration → Redirect URLs, otherwise Supabase falls back to the
-        # Site URL — the landing page then forwards the link (see app/page.tsx).
+        from app.config import get_settings
+
+        redirect_to = (
+            f"{get_settings().frontend_url}/auth/callback?next=/set-password"
+        )
         try:
             res = svc.auth.admin.invite_user_by_email(
-                req.email,
-                {
-                    "redirect_to": f"{get_settings().frontend_url.rstrip('/')}"
-                    "/auth/set-password",
-                    "data": {"full_name": req.full_name, "role": "patient"},
-                },
+                req.email, options={"redirect_to": redirect_to}
             )
         except Exception as exc:
             if _is_duplicate(exc):
-                raise HTTPException(
-                    status_code=409,
-                    detail="An account with this email already exists — "
-                    "use 'Add existing patient' instead.",
-                ) from exc
+                raise _duplicate_response(svc, req.email, user.id) from exc
             raise HTTPException(
                 status_code=502,
                 detail=f"Supabase invite failed: {exc}",
             ) from exc
         patient_id = str(res.user.id)
-        _upsert_patient_profile(patient_id, req, user.id)
+        _upsert_patient_profile(patient_id, req, user.id, user.full_name or "Your doctor")
         return CreatePatientResponse(
             patient_id=UUID(patient_id),
             method="invite",
             email=req.email,
-            message="Invitation sent — the patient opens the link in the "
-            "email, creates a password, then signs in.",
+            message="Invitation sent — the patient sets their own password "
+            "from the link in the email.",
         )
 
     # temp_password
@@ -123,17 +161,13 @@ def create_patient(
         )
     except Exception as exc:
         if _is_duplicate(exc):
-            raise HTTPException(
-                status_code=409,
-                detail="An account with this email already exists — "
-                "use 'Add existing patient' instead.",
-            ) from exc
+            raise _duplicate_response(svc, req.email, user.id) from exc
         raise HTTPException(
             status_code=502, detail=f"Supabase user creation failed: {exc}"
         ) from exc
 
     patient_id = str(res.user.id)
-    _upsert_patient_profile(patient_id, req, user.id)
+    _upsert_patient_profile(patient_id, req, user.id, user.full_name or "Your doctor")
     return CreatePatientResponse(
         patient_id=UUID(patient_id),
         method="temp_password",
@@ -142,6 +176,77 @@ def create_patient(
         message="Account created. Share this password with the patient now — "
         "it is shown only once. The patient can change it from their profile.",
     )
+
+
+@router.post("/{patient_id}/credentials")
+def send_patient_credentials(
+    patient_id: UUID,
+    req: PatientCredentialsRequest,
+    user: AuthUser = Depends(require_doctor),
+) -> dict:
+    """Re-grant access to an EXISTING panel patient whose invite link
+    expired or who forgot their password.
+
+    login_link   → magic-link email that signs the patient in so they can
+                   set a new password on /set-password (no password needed)
+    temp_password → admin sets a generated password (shown ONCE); also
+                   confirms unconfirmed emails, unblocking self-registered
+                   patients stuck on 'confirm your email'.
+    """
+    pid = str(patient_id)
+    if not has_panel_link(user.id, pid):
+        raise HTTPException(
+            status_code=403, detail="This patient is not in your panel."
+        )
+    profile = get_profile(pid)
+    email = profile.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=400, detail="This account has no email address."
+        )
+
+    if req.method == "login_link":
+        from app.config import get_settings
+
+        redirect_to = (
+            f"{get_settings().frontend_url}/auth/callback?next=/set-password"
+        )
+        try:
+            get_anon_client().auth.sign_in_with_otp(
+                {
+                    "email": email,
+                    "options": {"email_redirect_to": redirect_to},
+                }
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Could not send the login link: {exc}",
+            ) from exc
+        return {
+            "method": "login_link",
+            "email": email,
+            "message": f"Login link sent to {email} — it signs the patient "
+            "in so they can set a new password.",
+        }
+
+    # temp_password — also confirms the email, unblocking stuck signups
+    temp = _generate_password()
+    try:
+        get_service_client().auth.admin.update_user_by_id(
+            pid, {"password": temp, "email_confirm": True}
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502, detail=f"Could not update the password: {exc}"
+        ) from exc
+    return {
+        "method": "temp_password",
+        "email": email,
+        "temp_password": temp,
+        "message": "New temporary password set — share it now, it is shown "
+        "only once. The patient can change it from their profile.",
+    }
 
 
 @router.post("/link")
@@ -173,6 +278,13 @@ def link_patient(
         {"doctor_id": user.id, "patient_id": profile["id"]},
         on_conflict="doctor_id,patient_id",
     ).execute()
+    notify(
+        profile["id"],
+        "panel_added",
+        {"doctor": user.full_name or "Your doctor"},
+        link="/patient",
+        actor_id=user.id,
+    )
     return {"linked": True, "patient": profile}
 
 

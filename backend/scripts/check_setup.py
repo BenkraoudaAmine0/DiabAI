@@ -6,7 +6,7 @@
 
 Checks backend/.env and frontend/.env.local, the Supabase connection, the
 Supabase Auth settings that break sign-up / sign-in, that migrations
-0001-0008 are applied, the storage buckets, the embedding model, the Gemini
+0001-0009 are applied, the storage buckets, the embedding model, the Gemini
 key and model names, and the diabetes model. Nothing is created or changed;
 only counts are printed, never keys or user data. Exit code 1 if anything
 failed.
@@ -155,11 +155,11 @@ if backend_ok:
         ("0001", "kb_documents", "id"),
         ("0001", "kb_chunks", "id"),
         ("0002", "gemini_usage", "id"),
-        ("0004", "kb_documents", "status, sha256, chunks_embedded"),
-        ("0004", "kb_chunks", "metadata"),
-        ("0005", "kb_documents", "extraction"),
-        ("0006", "predictions", "status, interpretation, reviewed_by"),
-        ("0008", "kb_documents", "embedding_model"),
+        ("0005", "kb_documents", "status, sha256, chunks_embedded"),
+        ("0005", "kb_chunks", "metadata"),
+        ("0006", "kb_documents", "extraction"),
+        ("0007", "predictions", "status, interpretation, reviewed_by"),
+        ("0009", "kb_documents", "embedding_model"),
     ]
     missing: dict[str, str] = {}
     for migration, table, columns in probes:
@@ -176,7 +176,7 @@ if backend_ok:
                 break
             missing[migration] = f"{table}({columns}): {text[:120]}"
     if "key" not in missing:
-        for migration, rpc in (("0004", "match_kb_chunks_v2"), ("0008", "match_kb_chunks_v3")):
+        for migration, rpc in (("0005", "match_kb_chunks_v2"), ("0009", "match_kb_chunks_v3")):
             try:
                 svc.rpc(rpc, {"query_embedding": [0.0] * s.embedding_dimensions,
                               "match_count": 1}).execute()
@@ -184,8 +184,8 @@ if backend_ok:
                 missing.setdefault(migration, f"{rpc}: {str(exc)[:120]}")
         names = {
             "0001": "0001_init.sql", "0002": "0002_admin.sql",
-            "0004": "0004_kb_uploads.sql", "0005": "0005_kb_rich_content.sql",
-            "0006": "0006_prediction_review.sql", "0008": "0008_embedding_model.sql",
+            "0005": "0005_kb_uploads.sql", "0006": "0006_kb_rich_content.sql",
+            "0007": "0007_prediction_review.sql", "0009": "0009_embedding_model.sql",
         }
         for migration, file in names.items():
             if migration in missing:
@@ -193,8 +193,8 @@ if backend_ok:
                        f"Supabase -> SQL Editor -> paste backend/supabase/migrations/{file} -> Run")
             else:
                 report(OK, f"migration {file}")
-        report(INFO, "0003_kb_index.sql and 0007_role_hardening.sql can't be checked "
-               "from the API — make sure you ran them (0007 before 0008)")
+        report(INFO, "0003_kb_index.sql and 0008_role_hardening.sql can't be checked "
+               "from the API — make sure you ran them (0008 before 0009)")
 
         section("Accounts and storage")
         try:
@@ -209,7 +209,7 @@ if backend_ok:
             if orphans:
                 report(WARN, f"{orphans} account(s) have no profile — they sign in but the "
                        "app can't load them",
-                       "created before migration 0001 ran; 0007_role_hardening.sql "
+                       "created before migration 0001 ran; 0008_role_hardening.sql "
                        "creates the missing profiles")
             else:
                 report(OK, f"every account ({len(users)}) has a profile")
@@ -232,7 +232,7 @@ if backend_ok:
             else:
                 report(OK, f"knowledge base: {len(docs)} document(s) ready, all searchable")
         except Exception:
-            pass  # 0008 missing: already reported above
+            pass  # 0009 missing: already reported above
         try:
             buckets = {b.name for b in svc.storage.list_buckets()}
             for bucket in ("scans", "kb-docs"):

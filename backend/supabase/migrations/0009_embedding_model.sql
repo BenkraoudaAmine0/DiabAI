@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- DiabAI 0008 — knowledge base: remember which model embedded each document
--- Run ONCE in Supabase SQL Editor (after 0007_role_hardening.sql).
+-- DiabAI 0009 — knowledge base: remember which model embedded each document
+-- Run ONCE in Supabase SQL Editor (after 0008_role_hardening.sql).
 --
 -- The knowledge base can now be embedded by a free local model
 -- (EMBEDDING_PROVIDER=local, google/embeddinggemma-300m — the default) or by

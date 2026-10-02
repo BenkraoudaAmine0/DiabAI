@@ -83,7 +83,7 @@ one book takes about 4 days. Hence `EMBEDDING_PROVIDER=local` (default):
 documents — vectors of two models can't be compared. That's why the book
 can't be embedded locally "just once" and then searched with Gemini: the
 chatbot uses the same local model for every question (≈ 50 ms each).
-`kb_documents.embedding_model` (migration 0008) records each document's
+`kb_documents.embedding_model` (migration 0009) records each document's
 model, `match_kb_chunks_v3` only searches documents of the current one, and
 the admin table flags the others as *Not searched — re-index*.
 
@@ -122,11 +122,11 @@ All use the single `GEMINI_MODEL` (no fallback, by design).
 | Prediction API: predict, report, review, interpretation, PDF, access rules           | FastAPI TestClient + in-memory Supabase                                  | ✅ |
 | Invitation link → set password → sign in; report page; confirm; PDF                  | browser against a local Supabase / API stand-in                          | ✅ |
 | Frontend                                                                             | `tsc`, `next build`                                                      | ✅ |
-| **Not verified**: real Gemini calls (model name, embeddings, vision), real Supabase (migrations 0005–0007, invite email) | needs `backend/.env` keys                       | to do with the team's project |
+| **Not verified**: real Gemini calls (model name, embeddings, vision), real Supabase (migrations 0005–0009, invite email) | needs `backend/.env` keys                       | to do with the team's project |
 
 ## Uploading books — checklist
 
-1. Apply migrations `0004`, `0005` and `0008`.
+1. Apply migrations `0005`, `0006` and `0009`.
 2. Start the API once with internet access: the local embedding model
    downloads (~1.2 GB) on the first start — the log says
    `[startup] embeddings: local model ready`.
@@ -154,16 +154,16 @@ original isn't stored, so it can't be re-indexed later from the dashboard
 
 | Severity | Finding                                                                                                                                       | Fix |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| Critical | Anyone could sign up as **admin**: `handle_new_user` copied `role` from signup metadata and the check constraint allows `'admin'`             | `0007_role_hardening.sql` |
-| Critical | Any user could set their own `role` (or `email`) from the browser: `profiles_update_own` allowed every column                                 | `0007` — users may only edit name, phone, birth date, sex |
-| High     | Invitation links didn't log the patient in: `@supabase/ssr` is PKCE-only and rejects Supabase's implicit-flow invite links; there was no page to set a password | `/auth/set-password`, `redirect_to` on the invite, landing-page fallback, forgot-password flow |
+| Critical | Anyone could sign up as **admin**: `handle_new_user` copied `role` from signup metadata and the check constraint allows `'admin'`             | `0008_role_hardening.sql` |
+| Critical | Any user could set their own `role` (or `email`) from the browser: `profiles_update_own` allowed every column                                 | `0008` — users may only edit name, phone, birth date, sex |
+| High     | Invitation links didn't log the patient in: `@supabase/ssr` is PKCE-only and rejects Supabase's implicit-flow invite links; there was no page to set a password | `/auth/callback` → `/set-password` + *Login access* resend (team lead, notifications commit); this branch adds the landing-page fallback and *Forgot password?* on that flow |
 | High     | Chat had no memory: the frontend never sent `session_id` (a new session per message) and the backend never used the history                  | session reuse + LangGraph `condense` node |
 | High     | Admin dashboard logged **0 tokens / $0** for every chat answer: usage was read from `llm_output["token_usage"]`, which langchain-google-genai doesn't fill | read `AIMessage.usage_metadata` |
 | High     | PDF / Word tables were flattened into jumbled text, images ignored, scanned PDFs rejected                                                       | `kb_loaders.py` |
 | Medium   | Long tables were split mid-row by the text splitter                                                                                           | table-aware split |
 | Medium   | Question and answer rows shared one `now()` timestamp, so ordering by `created_at` was ambiguous                                               | explicit timestamps |
 | Medium   | SHAP waterfall showed scaler z-scores (`−0.125 = HbA1c_level`) and a broken emoji glyph; matplotlib used from several threads                   | entered values + readable names, lock |
-| Medium   | Diabetes result was shown to patients straight away, without any doctor validation                                                            | review workflow (`0006`): patients see confirmed predictions only |
+| Medium   | Diabetes result was shown to patients straight away, without any doctor validation                                                            | review workflow (`0007`): patients see confirmed predictions only |
 | Low      | Smoking select listed "Former smoker" three times                                                                                             | one option |
 | Low      | Admin scans weren't attributed to the selected patient                                                                                        | `routers/vision.py` |
 | Low      | Patient scan history had no `id` (React keys)                                                                                                 | `routers/records.py` |

@@ -1,13 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import Logo from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { LangToggle, useI18n } from "@/i18n";
-import { LOGIN_EMAIL, RECOVERY_FLAG, readSession, writeSession } from "@/lib/authFlow";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const inputCls =
@@ -17,22 +16,12 @@ function LoginForm() {
   const { t } = useI18n();
   const { refreshProfile } = useAuth();
   const router = useRouter();
-  const passwordSet = useSearchParams().get("passwordSet") === "1";
   const [mode, setMode] = useState<"login" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  // coming from /auth/set-password: the account's email is ready to use
-  useEffect(() => {
-    const saved = readSession(LOGIN_EMAIL);
-    writeSession(LOGIN_EMAIL, null);
-    // browser storage only exists after hydration, so it's read here
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (saved) setEmail(saved);
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -83,10 +72,11 @@ function LoginForm() {
     setBusy(true);
     setError(null);
     try {
-      writeSession(RECOVERY_FLAG, "1");
+      // same landing as invitations: /auth/callback exchanges the code,
+      // then /set-password asks for the new password
       const { error: err } = await getSupabaseBrowserClient().auth.resetPasswordForEmail(
         email,
-        { redirectTo: `${window.location.origin}/auth/set-password` }
+        { redirectTo: `${window.location.origin}/auth/callback?next=/set-password` }
       );
       if (err) setError(err.message);
       else setSentTo(email);
@@ -150,11 +140,6 @@ function LoginForm() {
       <p className="mt-1 text-sm text-slate-500">
         {t("auth.loginSubtitle")}
       </p>
-      {passwordSet && (
-        <p className="mt-5 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {t("auth.passwordSet")}
-        </p>
-      )}
       <form onSubmit={submit} className="mt-6 space-y-4">
         <input
           type="email"
@@ -208,7 +193,6 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  const { t } = useI18n();
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4">
       <div className="absolute right-4 top-4">
@@ -218,9 +202,7 @@ export default function LoginPage() {
         <div className="mb-8 flex justify-center">
           <Logo size={44} />
         </div>
-        <Suspense fallback={<p className="text-center text-sm text-slate-500">{t("common.loading")}</p>}>
-          <LoginForm />
-        </Suspense>
+        <LoginForm />
       </div>
     </div>
   );

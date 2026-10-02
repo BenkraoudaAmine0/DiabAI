@@ -150,7 +150,7 @@ def retrieve(question: str) -> list[dict]:
         if "match_kb_chunks_v3" in str(exc):
             raise RuntimeError(
                 "the knowledge-base search function is missing — apply "
-                "backend/supabase/migrations/0008_embedding_model.sql"
+                "backend/supabase/migrations/0009_embedding_model.sql"
             ) from exc
         raise
     chunks = []

@@ -5,7 +5,7 @@ PDF / EPUB / DOCX / TXT / MD → LangChain loaders (text, tables, images read
 by Gemini — app/services/kb_loaders) → RecursiveCharacterTextSplitter
 (900/150, tables cut between rows) → embeddings (EMBEDDING_PROVIDER: local
 EmbeddingGemma by default, or Gemini) → kb_chunks. Requires migrations
-0004, 0005 and 0008.
+0005, 0006 and 0009.
 
 Run from the backend folder (needs backend/.env configured):
 
@@ -81,7 +81,7 @@ def ingest(svc, path: Path, kind: str) -> str:
         .limit(1).execute().data
     )
     if not existing:
-        # Ingested before migration 0004, so no hash is stored yet: record it
+        # Ingested before migration 0005, so no hash is stored yet: record it
         # instead of adding a duplicate copy.
         existing = (
             svc.table("kb_documents").select(columns)

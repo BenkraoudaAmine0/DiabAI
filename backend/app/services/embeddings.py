@@ -13,7 +13,7 @@ EMBEDDING_PROVIDER=gemini
 
 Vectors of two different models live in different spaces: a question embedded
 by one model can't find documents embedded by another. Every document records
-the model that embedded it (kb_documents.embedding_model, migration 0008) and
+the model that embedded it (kb_documents.embedding_model, migration 0009) and
 the chatbot only searches documents of the current model — after switching
 provider, re-index the other documents from the admin dashboard.
 """

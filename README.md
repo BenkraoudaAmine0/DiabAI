@@ -75,38 +75,35 @@ DiabAI/
 1. Create a project at [supabase.com](https://supabase.com).
 2. SQL Editor → New query → paste **all** of
    `backend/supabase/migrations/0001_init.sql` → **Run**, then do the same,
-   in order, with `0002_admin.sql` … `0008_embedding_model.sql`.
-   All eight are required:
+   in order, with `0002_admin.sql` … `0009_embedding_model.sql`.
+   All nine are required:
 
    | Migration | Adds |
    | --------- | ---- |
    | 0001 | tables, RLS policies, `match_kb_chunks`, `scans` / `kb-docs` buckets |
    | 0002 | `gemini_usage` (admin usage & cost view) |
    | 0003 | HNSW vector index |
-   | 0004 | knowledge-base upload status, file info, page / chapter citations, `match_kb_chunks_v2` |
-   | 0005 | knowledge-base extraction stats (tables, images read, scanned pages) |
-   | 0006 | prediction review (pending / confirmed / rejected) + clinical interpretation; patients only read confirmed predictions |
-   | 0007 | **security:** nobody can sign up as admin or change their own role / email; creates missing profiles |
-   | 0008 | records which embedding model indexed each document; search only uses documents of the current model |
+   | 0004 | `notifications` table + Realtime publication for the in-app bell |
+   | 0005 | knowledge-base upload status, file info, page / chapter citations, `match_kb_chunks_v2` |
+   | 0006 | knowledge-base extraction stats (tables, images read, scanned pages) |
+   | 0007 | prediction review (pending / confirmed / rejected) + clinical interpretation; patients only read confirmed predictions |
+   | 0008 | **security:** nobody can sign up as admin or change their own role / email; creates missing profiles |
+   | 0009 | records which embedding model indexed each document; search only uses documents of the current model |
 3. Project Settings → API: copy the **Project URL**, the **anon public key**
    and the **service_role key**.
 4. Authentication → **URL Configuration**:
    - **Site URL**: your frontend, e.g. `http://localhost:3000`
    - **Redirect URLs**: add `http://localhost:3000/**` (and your production
-     URL + `/**`). Invitation and password-reset emails open
-     `/auth/set-password`; if it isn't allowed, Supabase falls back to the
-     Site URL — the landing page forwards the link, but allow-listing it is
-     cleaner. Set `FRONTEND_URL` in `backend/.env` to the same frontend URL.
+     URL + `/**`) — it covers `/auth/callback` and `/set-password`, where
+     invitation and password-reset emails lead. Without it, Supabase falls
+     back to the Site URL (the landing page then forwards the link). Set
+     `FRONTEND_URL` in `backend/.env` to the same frontend URL.
 
 > **Auth settings:** Authentication → Providers → Email must be enabled.
-> Email confirmation: ON is recommended for public signups. The doctor-created
-> patient accounts (temp-password method) bypass confirmation automatically.
->
-> *Optional, more robust invitation links* (survive email scanners and
-> work in any browser): Authentication → Email Templates → **Invite user** →
-> replace the link with
-> `{{ .SiteURL }}/auth/set-password?token_hash={{ .TokenHash }}&type=invite`.
-> The default template works too.
+> Email confirmation: ON is recommended for public signups — but Supabase's
+> built-in email only reaches your project's team members, so turn it off
+> for development or set up custom SMTP. The doctor-created patient accounts
+> (temp-password method) bypass confirmation automatically.
 
 ### 2. Gemini API key
 
@@ -168,7 +165,7 @@ scanned pages, read by Gemini — at most `KB_MAX_VISION_CALLS` per file) →
 | Needs | ~1.2 GB download once (`models_app/embeddings/`), ~1.5 GB RAM | `GEMINI_API_KEY` |
 
 Questions and documents must be embedded by the **same** model, so each
-document remembers its model (migration 0008) and the chatbot only searches
+document remembers its model (migration 0009) and the chatbot only searches
 documents of the current one. After changing `EMBEDDING_PROVIDER`, re-index
 the knowledge base (admin dashboard → *Re-index*, or run
 `scripts/ingest_kb.py` again — it re-embeds what another model indexed). PDF chunks keep their page number and
@@ -236,7 +233,7 @@ regenerable). From there the doctor can:
 
 - **Confirm & validate** or **Reject**, with an optional note — every
   prediction is *pending* until then, and **patients only see confirmed
-  predictions** (API and RLS, migration 0006);
+  predictions** (API and RLS, migration 0007);
 - **Modify inputs** — back to the form, prefilled, for a new prediction;
 - **Export PDF** — the same report in English or French (ReportLab), also
   available from the patient's file and, once confirmed, to the patient.
@@ -248,13 +245,14 @@ and asserts the tier logic.
 
 Doctors create patient accounts in **My patients → New patient**, choosing:
 
-- **Email invitation** — Supabase sends a link to
-  `FRONTEND_URL/auth/set-password`: the page opens with the patient's name,
-  they **create their password**, then sign in with it. An expired link
-  shows a clear message; the patient can use **Forgot password?** on the
-  sign-in page, which uses the same page. (Needs the Redirect URLs setting
-  from setup step 1. Uses Supabase's built-in SMTP, which is rate-limited on
-  the free tier — configure custom SMTP in Auth → SMTP for real use.)
+- **Email invitation** — Supabase sends a link that opens `/set-password`,
+  where the patient creates their own password and is signed in immediately.
+  The redirect target comes from `FRONTEND_URL` in `backend/.env`. An
+  expired link shows a clear message: the doctor sends a new one from the
+  patient's page (*Login access*), or the patient uses **Forgot password?**
+  on the sign-in page, which leads to the same page.
+  (Uses Supabase's built-in SMTP, which is rate-limited on the free tier —
+  configure custom SMTP in Auth → SMTP for real use.)
 - **Temporary password** — a 12-char password is generated via the Admin API
   and shown **once** on the doctor's screen with a copy button; the doctor
   shares it in person. The patient can change it later in Profile.
@@ -284,6 +282,17 @@ session, so the bot remembers the last exchanges; *New conversation* starts
 over. It answers in English or French (matching the question) and never
 diagnoses. Architecture, tests and review:
 [docs/RAG_ARCHITECTURE.md](docs/RAG_ARCHITECTURE.md).
+
+### Notifications
+
+A bell in the top bar shows unread in-app notifications for every user,
+updated **live** via Supabase Realtime (with a 60s polling fallback).
+Triggered events: a doctor records a **diabetes prediction** or a **scan**
+for a patient → the patient is notified; a patient account is
+**created or linked** to a doctor's panel → the patient gets a welcome
+notification. Notification text is structured (`kind` + `data`), so titles
+render in the user's language (EN/FR). Clicking one navigates to the
+relevant page and marks it read; "Mark all read" clears the badge.
 
 ### Admin
 
@@ -332,10 +341,10 @@ the API with a single worker process (the default) for that reason.
   enforces roles (`require_doctor` for predictions, eye scans, panel admin).
 - All writes go through the backend with the service-role key; RLS policies
   (`0001_init.sql`) protect direct client reads: patients read only their own
-  data (confirmed predictions only, `0006`), doctors only their panel's;
+  data (confirmed predictions only, `0007`), doctors only their panel's;
   admin endpoints are role-gated (`require_admin`) and `gemini_usage` has RLS
   enabled with no policies (backend-only).
-- Roles can't be self-assigned (`0007`): signups are doctor or patient only,
+- Roles can't be self-assigned (`0008`): signups are doctor or patient only,
   and users can edit only their name, phone, birth date and sex. The admin
   role is granted from the SQL Editor.
 - Signup is open, so anyone can register as a doctor and link patients by
@@ -368,13 +377,13 @@ email's set-password page) → **My history** shows the confirmed diagnostic.
 | 403 Doctor access only         | Signed in as patient; use a doctor account                                          |
 | 503 model not installed        | Add`model.<ext>` to `backend/models_app/<scan>/`                                |
 | Chat finds nothing in the KB   | Upload documents from the admin dashboard, or run`python scripts/ingest_kb.py`   |
-| KB upload/list fails, `column … does not exist` | Apply migrations `0004_kb_uploads.sql` and `0005_kb_rich_content.sql` |
-| Report page: "Prediction review isn't set up" | Apply `0006_prediction_review.sql`                                          |
+| KB upload/list fails, `column … does not exist` | Apply migrations `0005_kb_uploads.sql` and `0006_kb_rich_content.sql` |
+| Report page: "Prediction review isn't set up" | Apply `0007_prediction_review.sql`                                          |
 | Invite email not arriving      | Supabase free SMTP is rate-limited; use the temp-password method or set custom SMTP |
 | Invite link opens the home page / "This link can't be used" | Add `FRONTEND_URL/**` to Auth → URL Configuration → Redirect URLs; links expire after 24 h and work once — patient can use *Forgot password?* |
 | A patient doesn't see a prediction | It is still *pending*: confirm it on the report page                                |
 | PDF uploaded, "images skipped"  | Raise `KB_MAX_VISION_CALLS` in `backend/.env`, then *Re-index*                     |
 | Document shows "Not searched: embedded by another model" | It was indexed with the other `EMBEDDING_PROVIDER` — *Re-index* it |
-| Chat: "knowledge-base search function is missing" | Apply `0008_embedding_model.sql` |
+| Chat: "knowledge-base search function is missing" | Apply `0009_embedding_model.sql` |
 | API log: "local model unavailable" | `python -m pip install -r requirements.txt` (fastembed); the first start needs internet to download the model |
 | Windows: `DLL load failed … stratégie de contrôle d'application` | Smart App Control blocked a native module of a freshly installed package; retry, or use a version with wider distribution (e.g. `numba<0.64`, `scikit-learn==1.8.0`) |

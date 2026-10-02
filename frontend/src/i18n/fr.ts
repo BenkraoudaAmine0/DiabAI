@@ -75,11 +75,23 @@ const fr: Record<string, string> = {
     "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse, puis connectez-vous.",
   "auth.noProfileTitle": "Votre compte n'a pas de profil",
   "auth.noProfileDesc":
-    "Vous êtes connecté, mais votre profil n'a pas pu être chargé. La base de données n'est sans doute pas encore installée : exécutez les migrations SQL 0001 à 0008 (backend/supabase/migrations) dans l'éditeur SQL de Supabase, puis reconnectez-vous.",
+    "Vous êtes connecté, mais votre profil n'a pas pu être chargé. La base de données n'est sans doute pas encore installée : exécutez les migrations SQL 0001 à 0009 (backend/supabase/migrations) dans l'éditeur SQL de Supabase, puis reconnectez-vous.",
   "auth.notConfirmed":
     "Cette adresse e-mail n'est pas encore confirmée — ouvrez d'abord le lien de l'e-mail de confirmation.",
   "auth.invalid":"E-mail ou mot de passe invalide",
   "auth.working": "Veuillez patienter…",
+  "auth.setPasswordTitle": "Définir votre mot de passe",
+  "auth.setPasswordSubtitle":
+    "Bienvenue sur DiabAI ! Créez un mot de passe pour sécuriser votre compte.",
+  "auth.newPassword": "Nouveau mot de passe (min. 8 caractères)",
+  "auth.confirmPassword": "Confirmer le mot de passe",
+  "auth.setPassword": "Enregistrer le mot de passe",
+  "auth.passwordMismatch": "Les mots de passe ne correspondent pas",
+  "auth.passwordSet": "Mot de passe créé — vous êtes connecté !",
+  "auth.inviteWorking": "Validation de votre invitation…",
+  "auth.linkExpired": "Ce lien est invalide ou a expiré",
+  "auth.linkExpiredDesc":
+    "Demandez à votre médecin une nouvelle invitation, ou connectez-vous si vous avez déjà défini un mot de passe.",
 
   // doctor dashboard
   "dash.panel": "Patients suivis",
@@ -117,6 +129,11 @@ const fr: Record<string, string> = {
     "Communiquez ce mot de passe au patient maintenant — il ne sera plus affiché.",
   "patients.predictions": "prédictions",
   "patients.scans": "scans",
+  "patients.loginAccess": "Accès au compte",
+  "patients.loginAccessDesc":
+    "Invitation expirée ou mot de passe oublié ? Envoyez un nouveau lien de connexion ou définissez un mot de passe temporaire.",
+  "patients.sendLoginLink": "Envoyer un lien de connexion",
+  "patients.setTempPassword": "Définir un mot de passe temporaire",
 
   // diabetes form
   "diabetes.title": "Prédiction du diabète",
@@ -161,6 +178,8 @@ const fr: Record<string, string> = {
   "scan.again": "Scanner une autre image",
   "scan.modelMissing": "Ce modèle n'est pas encore installé sur le serveur.",
   "scan.for": "Scan pour",
+  "scan.uncertain": "Confiance faible — résultat incertain",
+  "scan.referable": "Rétinopathie référable",
 
   // history
   "history.title": "Mon historique",
@@ -189,6 +208,17 @@ const fr: Record<string, string> = {
   "profile.update": "Mettre à jour",
   "profile.updated": "Mot de passe mis à jour !",
   "profile.account": "Compte créé le",
+
+  // notifications
+  "notif.title": "Notifications",
+  "notif.empty": "Aucune notification",
+  "notif.markAll": "Tout marquer comme lu",
+  "notif.prediction_recorded": "{doctor} a enregistré une prédiction de diabète pour vous",
+  "notif.scan_recorded": "{doctor} a enregistré un résultat de scan {scan} pour vous",
+  "notif.panel_added": "{doctor} vous a ajouté à son panel de patients",
+  "scanShort.foot": "pied",
+  "scanShort.neck": "cou",
+  "scanShort.eye": "rétine",
 
   // admin
   "admin.title": "Tableau de bord admin",
@@ -243,29 +273,7 @@ const fr: Record<string, string> = {
   "kb.confirmDelete":
     "Supprimer « {title} » de la base de connaissances ? L'assistant ne l'utilisera plus.",
 
-  // mot de passe (lien d'invitation / de réinitialisation)
-  "setpw.titleInvite": "Créez votre mot de passe",
-  "setpw.titleRecovery": "Choisissez un nouveau mot de passe",
-  "setpw.welcome":
-    "Bienvenue sur DiabAI, {name} ! Votre médecin a créé votre compte — choisissez un mot de passe pour terminer.",
-  "setpw.welcomeNoName":
-    "Votre médecin a créé votre compte DiabAI — choisissez un mot de passe pour terminer.",
-  "setpw.recoveryDesc": "Saisissez un nouveau mot de passe pour votre compte.",
-  "setpw.account": "Compte",
-  "setpw.password": "Nouveau mot de passe",
-  "setpw.confirm": "Confirmez le mot de passe",
-  "setpw.rules": "Au moins 8 caractères.",
-  "setpw.tooShort": "Utilisez au moins 8 caractères.",
-  "setpw.mismatch": "Les deux mots de passe ne correspondent pas.",
-  "setpw.submit": "Enregistrer mon mot de passe",
-  "setpw.checking": "Vérification de votre lien…",
-  "setpw.invalidTitle": "Ce lien n'est pas utilisable",
-  "setpw.invalidDesc":
-    "Il a expiré ou a déjà été utilisé. Demandez à votre médecin de renvoyer une invitation, ou utilisez « Mot de passe oublié ? » sur la page de connexion.",
-  "setpw.show": "Afficher",
-  "setpw.hide": "Masquer",
-  "auth.passwordSet":
-    "Votre mot de passe est enregistré. Connectez-vous avec votre e-mail et votre nouveau mot de passe.",
+  // mot de passe oublié (même page que les invitations : /set-password)
   "auth.forgot": "Mot de passe oublié ?",
   "auth.forgotTitle": "Réinitialiser le mot de passe",
   "auth.forgotDesc":

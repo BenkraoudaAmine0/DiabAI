@@ -48,9 +48,9 @@ class Settings(BaseSettings):
     kb_min_image_px: int = 120  # skip icons, bullets and rules smaller than this
 
     # App
-    # Public URL of the frontend: invitation and password-reset emails link to
-    # {frontend_url}/auth/set-password (add it to Supabase → Auth → URL
-    # Configuration → Redirect URLs).
+    # Public URL of the frontend: invitation emails link to
+    # {frontend_url}/auth/callback?next=/set-password (allow {frontend_url}/**
+    # in Supabase → Auth → URL Configuration → Redirect URLs).
     frontend_url: str = "http://localhost:3000"
     cors_origins: str = "http://localhost:3000"
     signed_url_ttl: int = 60 * 60 * 24  # 24h

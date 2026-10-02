@@ -76,10 +76,22 @@ const en: Record<string, string> = {
   "auth.invalid": "Invalid email or password",
   "auth.noProfileTitle": "Your account has no profile",
   "auth.noProfileDesc":
-    "You are signed in, but your profile couldn't be loaded. The database is probably not set up yet: run the SQL migrations 0001 to 0008 (backend/supabase/migrations) in the Supabase SQL Editor, then sign in again.",
+    "You are signed in, but your profile couldn't be loaded. The database is probably not set up yet: run the SQL migrations 0001 to 0009 (backend/supabase/migrations) in the Supabase SQL Editor, then sign in again.",
   "auth.notConfirmed":
     "This email address isn't confirmed yet — open the link in the confirmation email first.",
   "auth.working": "Please wait…",
+  "auth.setPasswordTitle": "Set your password",
+  "auth.setPasswordSubtitle":
+    "Welcome to DiabAI! Create a password to secure your account.",
+  "auth.newPassword": "New password (min. 8 characters)",
+  "auth.confirmPassword": "Confirm password",
+  "auth.setPassword": "Save password",
+  "auth.passwordMismatch": "Passwords do not match",
+  "auth.passwordSet": "Password created — you are signed in!",
+  "auth.inviteWorking": "Validating your invitation…",
+  "auth.linkExpired": "This link is invalid or has expired",
+  "auth.linkExpiredDesc":
+    "Ask your doctor to send a new invitation, or sign in if you already set a password.",
 
   // doctor dashboard
   "dash.panel": "Patients in panel",
@@ -117,6 +129,11 @@ const en: Record<string, string> = {
     "Share this password with the patient now — it is shown only once.",
   "patients.predictions": "predictions",
   "patients.scans": "scans",
+  "patients.loginAccess": "Login access",
+  "patients.loginAccessDesc":
+    "Invite expired, or the patient forgot their password? Send a fresh login link or set a new temporary password.",
+  "patients.sendLoginLink": "Send login link",
+  "patients.setTempPassword": "Set temporary password",
 
   // diabetes form
   "diabetes.title": "Diabetes prediction",
@@ -161,6 +178,8 @@ const en: Record<string, string> = {
   "scan.again": "Scan another image",
   "scan.modelMissing": "This model is not installed on the server yet.",
   "scan.for": "Scan for",
+  "scan.uncertain": "Low confidence — treat as uncertain",
+  "scan.referable": "Referable DR",
 
   // history
   "history.title": "My history",
@@ -189,6 +208,17 @@ const en: Record<string, string> = {
   "profile.update": "Update",
   "profile.updated": "Password updated!",
   "profile.account": "Account created",
+
+  // notifications
+  "notif.title": "Notifications",
+  "notif.empty": "No notifications yet",
+  "notif.markAll": "Mark all read",
+  "notif.prediction_recorded": "{doctor} recorded a diabetes prediction for you",
+  "notif.scan_recorded": "{doctor} recorded a {scan} scan result for you",
+  "notif.panel_added": "{doctor} added you to their patient panel",
+  "scanShort.foot": "foot",
+  "scanShort.neck": "neck",
+  "scanShort.eye": "eye",
 
   // admin
   "admin.title": "Admin dashboard",
@@ -243,28 +273,7 @@ const en: Record<string, string> = {
   "kb.confirmDelete":
     "Delete “{title}” from the knowledge base? The assistant will stop using it.",
 
-  // set password (invitation / reset link)
-  "setpw.titleInvite": "Create your password",
-  "setpw.titleRecovery": "Choose a new password",
-  "setpw.welcome":
-    "Welcome to DiabAI, {name}! Your doctor created your account — choose a password to finish setting it up.",
-  "setpw.welcomeNoName":
-    "Your doctor created your DiabAI account — choose a password to finish setting it up.",
-  "setpw.recoveryDesc": "Enter a new password for your account.",
-  "setpw.account": "Account",
-  "setpw.password": "New password",
-  "setpw.confirm": "Confirm the password",
-  "setpw.rules": "At least 8 characters.",
-  "setpw.tooShort": "Use at least 8 characters.",
-  "setpw.mismatch": "The two passwords don't match.",
-  "setpw.submit": "Save my password",
-  "setpw.checking": "Checking your link…",
-  "setpw.invalidTitle": "This link can't be used",
-  "setpw.invalidDesc":
-    "It has expired or was already used. Ask your doctor to send a new invitation, or use “Forgot password?” on the sign-in page.",
-  "setpw.show": "Show",
-  "setpw.hide": "Hide",
-  "auth.passwordSet": "Your password is saved. Sign in with your email and your new password.",
+  // forgot password (same page as invitations: /set-password)
   "auth.forgot": "Forgot password?",
   "auth.forgotTitle": "Reset your password",
   "auth.forgotDesc": "Enter your email — we'll send you a link to choose a new password.",

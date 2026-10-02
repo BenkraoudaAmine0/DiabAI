@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from app.auth import AuthUser, get_current_user
 from app.schemas import ScanResult
 from app.services import vision_service
+from app.services.notification_service import notify
 from app.services.panel import ensure_panel_link
 from app.services.supabase_client import get_service_client, signed_url
 
@@ -96,12 +97,26 @@ async def scan(
             status_code=502, detail=f"Failed to save the scan: {exc}"
         ) from exc
 
+    if user.role in ("doctor", "admin") and subject_id:  # scanned for a patient
+        notify(
+            subject_id,
+            "scan_recorded",
+            {"doctor": user.full_name or "Your doctor", "scan": scan_type},
+            link="/patient/history",
+            actor_id=user.id,
+        )
+
     return ScanResult(
         scan_id=scan_id,
         scan_type=scan_type,
         label=result["label"],
+        top_class=result.get("top_class"),
+        uncertain=result.get("uncertain", False),
         confidence=result["confidence"],
         probabilities=result["probabilities"],
+        referable_dr_probability=result.get("referable_dr_probability"),
+        referable_dr=result.get("referable_dr"),
+        disclaimer=result.get("disclaimer"),
         image_url=signed_url(BUCKET, storage_path),
         created_at=created_at,
     )

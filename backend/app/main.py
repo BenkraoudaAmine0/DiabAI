@@ -7,7 +7,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import admin, chat, diabetes, kb, patients, records, vision
+from app.routers import (
+    admin,
+    chat,
+    diabetes,
+    kb,
+    notifications,
+    patients,
+    records,
+    vision,
+)
 from app.services import diabetes_service, embeddings, kb_ingest_service, vision_service
 
 
@@ -48,7 +57,7 @@ async def lifespan(app: FastAPI):
                   "marked failed — re-index them from the admin dashboard")
     except Exception as exc:
         print(f"[startup] knowledge base: status check skipped — {exc} "
-              "(is migration 0004 applied?)")
+              "(is migration 0005 applied?)")
     yield
 
 
@@ -76,6 +85,9 @@ app.include_router(records.router, prefix="/api/records", tags=["records"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(kb.router, prefix="/api/admin/kb", tags=["knowledge-base"])
+app.include_router(
+    notifications.router, prefix="/api/notifications", tags=["notifications"]
+)
 
 
 @app.get("/api/health")

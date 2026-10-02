@@ -62,10 +62,34 @@ export default function ScanUploader({
               {t("scan.result")}
             </p>
             <p className="text-3xl font-bold text-slate-900">{result.label}</p>
+            {result.top_class && result.uncertain && (
+              <p className="mt-0.5 text-xs text-slate-400">
+                top: {result.top_class}
+              </p>
+            )}
           </div>
-          <span className="rounded-full bg-teal-50 px-4 py-1.5 text-sm font-semibold text-teal-700">
-            {(result.confidence * 100).toFixed(1)}% {t("scan.confidence")}
-          </span>
+          <div className="flex flex-col items-end gap-1.5">
+            <span className="rounded-full bg-teal-50 px-4 py-1.5 text-sm font-semibold text-teal-700">
+              {(result.confidence * 100).toFixed(1)}% {t("scan.confidence")}
+            </span>
+            {result.uncertain && (
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                ⚠ {t("scan.uncertain")}
+              </span>
+            )}
+            {result.referable_dr != null && (
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  result.referable_dr
+                    ? "bg-red-100 text-red-700"
+                    : "bg-emerald-100 text-emerald-700"
+                }`}
+              >
+                {result.referable_dr ? "⚠ " : "✓ "}
+                {t("scan.referable")} ({(100 * (result.referable_dr_probability ?? 0)).toFixed(1)}%)
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -84,6 +108,10 @@ export default function ScanUploader({
             </div>
           ))}
         </div>
+
+        {result.disclaimer && (
+          <p className="text-xs text-slate-400">{result.disclaimer}</p>
+        )}
 
         <button
           onClick={() => pick(null)}

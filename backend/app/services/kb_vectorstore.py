@@ -2,13 +2,13 @@
 
 LangChain's stock SupabaseVectorStore assumes a table with (content,
 embedding, metadata) columns and calls the match RPC with a `query_count`
-argument. Our schema (see supabase/migrations/0001_init.sql + 0004) is:
+argument. Our schema (see supabase/migrations/0001_init.sql + 0005) is:
 
     kb_chunks(id, document_id, chunk_index, content, embedding vector(768),
               metadata jsonb)
     match_kb_chunks_v3(query_embedding, match_count, min_similarity,
                        document_ids, model_id)
-        -> (…, title, kind, metadata, similarity)            (migration 0008)
+        -> (…, title, kind, metadata, similarity)            (migration 0009)
 
 This subclass maps inserts to the real columns (document_id / chunk_index
 become columns, any other metadata such as page / chapter goes to the

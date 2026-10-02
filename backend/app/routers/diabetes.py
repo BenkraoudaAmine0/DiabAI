@@ -23,6 +23,7 @@ from app.schemas import (
 )
 from app.services import diabetes_service, interpretation_service, report_service
 from app.services.gemini_service import GeminiNotConfigured
+from app.services.notification_service import notify
 from app.services.panel import ensure_panel_link, has_panel_link
 from app.services.supabase_client import get_service_client, signed_url
 
@@ -124,7 +125,7 @@ def _load(prediction_id: UUID, user: AuthUser, *, doctor_only: bool = False) -> 
             raise HTTPException(
                 status_code=503,
                 detail="Prediction review isn't set up — apply "
-                "backend/supabase/migrations/0006_prediction_review.sql.",
+                "backend/supabase/migrations/0007_prediction_review.sql.",
             ) from exc
         raise
     if not rows:
@@ -189,7 +190,7 @@ def review_prediction(
 ) -> dict:
     """Confirm (shared with the patient) or reject (kept out of the patient's
     history). Can be changed later; the latest decision wins."""
-    _load(prediction_id, user, doctor_only=True)
+    before = _load(prediction_id, user, doctor_only=True)
     get_service_client().table("predictions").update(
         {
             "status": req.decision,
@@ -198,6 +199,15 @@ def review_prediction(
             "reviewed_at": datetime.now(timezone.utc).isoformat(),
         }
     ).eq("id", str(prediction_id)).execute()
+    if req.decision == "confirmed" and before.get("status") != "confirmed":
+        # the patient only sees a prediction once it is confirmed
+        notify(
+            before["patient_id"],
+            "prediction_recorded",
+            {"doctor": user.full_name or "Your doctor"},
+            link=f"/predictions/{prediction_id}",
+            actor_id=user.id,
+        )
     return _report(_load(prediction_id, user), user)
 
 

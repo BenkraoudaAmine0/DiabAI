@@ -15,7 +15,7 @@ def my_records(user: AuthUser = Depends(get_current_user)) -> dict:
     svc = get_service_client()
 
     if user.role == "patient":
-        # only predictions a doctor confirmed (migration 0006); before that
+        # only predictions a doctor confirmed (migration 0007); before that
         # migration there is no review step and every record is shown
         query = (
             svc.table("predictions")

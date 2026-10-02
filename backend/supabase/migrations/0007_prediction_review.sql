@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- DiabAI 0006 — diabetes predictions: doctor review + clinical interpretation
--- Run ONCE in Supabase SQL Editor (after 0005_kb_rich_content.sql).
+-- DiabAI 0007 — diabetes predictions: doctor review + clinical interpretation
+-- Run ONCE in Supabase SQL Editor (after 0006_kb_rich_content.sql).
 --
 -- * status: every new prediction is 'pending' until a doctor confirms or
 --   rejects it on the report page. Patients only see CONFIRMED predictions

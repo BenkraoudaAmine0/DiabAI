@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- DiabAI 0004 — knowledge-base uploads (admin dashboard): documents & books
--- Run ONCE in Supabase SQL Editor (after 0003_kb_index.sql).
+-- DiabAI 0005 — knowledge-base uploads (admin dashboard): documents & books
+-- Run ONCE in Supabase SQL Editor (after 0004_notifications.sql).
 --
 -- Additive only: new columns on kb_documents / kb_chunks, one index and a
 -- NEW search function match_kb_chunks_v2. Existing columns and the original

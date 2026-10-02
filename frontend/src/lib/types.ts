@@ -57,7 +57,7 @@ export interface PredictionRow {
   prediction: number;
   risk_tier: string;
   top_factors: TopFactor[] | null; // all factors, strongest first
-  status?: ReviewStatus; // missing before migration 0006
+  status?: ReviewStatus; // missing before migration 0007
   waterfall_path?: string | null;
   waterfall_url?: string | null;
   created_at: string;
@@ -113,9 +113,14 @@ export interface PredictionReport {
 export interface ScanResult {
   scan_id: string;
   scan_type: string;
-  label: string;
+  label: string; // class name or "uncertain"
+  top_class?: string | null;
+  uncertain?: boolean;
   confidence: number;
   probabilities: Record<string, number>;
+  referable_dr_probability?: number | null;
+  referable_dr?: boolean | null;
+  disclaimer?: string | null;
   image_url: string | null;
   created_at: string | null;
 }
@@ -126,7 +131,16 @@ export interface ScanRow {
   patient_id: string | null;
   scan_type: "foot" | "neck" | "eye";
   storage_path: string;
-  result: { label?: string; confidence?: number; probabilities?: Record<string, number> } | null;
+  result: {
+    label?: string;
+    top_class?: string;
+    uncertain?: boolean;
+    confidence?: number;
+    probabilities?: Record<string, number>;
+    referable_dr_probability?: number;
+    referable_dr?: boolean;
+    disclaimer?: string;
+  } | null;
   created_at: string;
   image_url?: string;
   operator?: { full_name: string | null } | null;
@@ -158,6 +172,16 @@ export interface ChatMessage {
 export interface ChatSession {
   id: string;
   title: string | null;
+  created_at: string;
+}
+
+// ── notifications ────────────────────────────────────────────────────────────
+export interface NotificationItem {
+  id: string;
+  kind: "prediction_recorded" | "scan_recorded" | "panel_added";
+  data: Record<string, string>; // { doctor, scan? } — rendered client-side
+  link: string | null;
+  read: boolean;
   created_at: string;
 }
 
@@ -197,14 +221,14 @@ export interface KbDocument {
   chunk_count: number | null;
   chunks_embedded: number;
   storage_path: string | null;
-  // what was read besides the text (migration 0005)
+  // what was read besides the text (migration 0006)
   extraction?: {
     tables: number;
     figures: number;
     ocr_pages: number;
     images_skipped: number;
   } | null;
-  // model that embedded it, e.g. "local:google/embeddinggemma-300m" (0008)
+  // model that embedded it, e.g. "local:google/embeddinggemma-300m" (0009)
   embedding_model?: string | null;
   created_at: string;
   uploader?: { full_name: string | null } | null;

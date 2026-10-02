@@ -1,9 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// /auth/set-password: invitation & reset links — the session is only in the
-// URL fragment, which the server never sees, so it must not redirect.
-const PUBLIC = ["/", "/login", "/register", "/auth/set-password"];
+const PUBLIC = ["/", "/login", "/register", "/set-password"];
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -12,7 +10,10 @@ export default async function proxy(request: NextRequest) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const path = request.nextUrl.pathname;
   const isPublic =
-    PUBLIC.includes(path) || path.startsWith("/_next") || path.startsWith("/api");
+    PUBLIC.includes(path) ||
+    path.startsWith("/auth") ||
+    path.startsWith("/_next") ||
+    path.startsWith("/api");
 
   if (!url || !key || isPublic) return response;
 

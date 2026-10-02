@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- DiabAI 0007 — close two privilege escalations on public.profiles
--- Run ONCE in Supabase SQL Editor (after 0006_prediction_review.sql).
+-- DiabAI 0008 — close two privilege escalations on public.profiles
+-- Run ONCE in Supabase SQL Editor (after 0007_prediction_review.sql).
 --
 -- 1. handle_new_user copied `role` from the signup metadata, and the check
 --    constraint allows 'admin': anyone calling supabase.auth.signUp() with

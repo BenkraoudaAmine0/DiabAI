@@ -63,9 +63,14 @@ class InterpretationRequest(BaseModel):
 class ScanResult(BaseModel):
     scan_id: UUID
     scan_type: str
-    label: str
+    label: str  # class name or "uncertain"
+    top_class: Optional[str] = None
+    uncertain: bool = False
     confidence: float
     probabilities: dict[str, float] = {}
+    referable_dr_probability: Optional[float] = None  # eye only
+    referable_dr: Optional[bool] = None  # eye only
+    disclaimer: Optional[str] = None
     image_url: Optional[str] = None
     created_at: Optional[str] = None
 
@@ -90,6 +95,10 @@ class CreatePatientResponse(BaseModel):
 
 class LinkPatientRequest(BaseModel):
     email: EmailStr
+
+
+class PatientCredentialsRequest(BaseModel):
+    method: Literal["login_link", "temp_password"]
 
 
 # ── chat ─────────────────────────────────────────────────────────────────────
