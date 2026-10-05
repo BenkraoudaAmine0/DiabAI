@@ -16,7 +16,7 @@ const adminEn: Record<string, string> = {
   "adm.range": "{from}–{to} of {total}",
   "adm.export": "Export",
   "adm.exportCsv": "Export CSV",
-  "adm.migration0012": "Run migration 0012_admin_security.sql in Supabase to enable this.",
+  "adm.migration0013": "Run migration 0013_admin_security.sql in Supabase to enable this.",
 
   "adm.nav.section": "Administration",
   "adm.nav.overview": "Overview",

@@ -285,7 +285,7 @@ function DiabetesForm() {
           blood_glucose_level: n(form.glucose),
         }),
       });
-      // keep the measurements in the lab history too (needs migration 0011)
+      // keep the measurements in the lab history too (needs migration 0012)
       const vitals = {
         fasting_glucose: n(form.glucose),
         hba1c: n(form.hba1c),

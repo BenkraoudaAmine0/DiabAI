@@ -301,7 +301,7 @@ def admin_doctors(user: AuthUser = Depends(require_admin)) -> dict:
             "id, email, full_name, created_at, specialty, license_number, facility, verified_at",
         )
         verification = True
-    except Exception:  # before migrations 0011/0012
+    except Exception:  # before migrations 0012/0013
         doctors = _profiles(svc, "doctor")
         verification = False
     sizes = _panel_sizes(svc)
@@ -344,7 +344,7 @@ def verify_doctor(doctor_id: UUID, req: VerifyRequest, user: AuthUser = Depends(
             {"verified_at": now if req.verified else None, "verified_by": user.id if req.verified else None}
         ).eq("id", did).execute()
     except Exception as exc:
-        raise HTTPException(status_code=409, detail="Apply backend/supabase/migrations/0012_admin_security.sql first.") from exc
+        raise HTTPException(status_code=409, detail="Apply backend/supabase/migrations/0013_admin_security.sql first.") from exc
     audit_by(user, "doctor.verify" if req.verified else "doctor.unverify", "profile", did)
     return {"id": did, "verified": req.verified}
 

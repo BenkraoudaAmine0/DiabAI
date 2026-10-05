@@ -1,7 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- DiabAI 0011 — patient record for the doctor profile page (Figma
+-- DiabAI 0012 — patient record for the doctor profile page (Figma
 -- "patient-profile"): administrative identifiers, vitals / lab values and
--- consultation notes. Run ONCE in Supabase SQL Editor (after 0010).
+-- consultation notes. Run ONCE in Supabase SQL Editor (after 0011).
 -- Safe to re-run. Writes go through the FastAPI backend (service role).
 -- ═══════════════════════════════════════════════════════════════════════════
 

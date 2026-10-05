@@ -16,7 +16,7 @@ const adminFr: Record<string, string> = {
   "adm.range": "{from}–{to} sur {total}",
   "adm.export": "Exporter",
   "adm.exportCsv": "Exporter en CSV",
-  "adm.migration0012": "Exécutez la migration 0012_admin_security.sql dans Supabase pour activer cette fonction.",
+  "adm.migration0013": "Exécutez la migration 0013_admin_security.sql dans Supabase pour activer cette fonction.",
 
   "adm.nav.section": "Administration",
   "adm.nav.overview": "Vue d’ensemble",

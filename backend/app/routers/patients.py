@@ -418,7 +418,7 @@ def set_next_visit(
         if "next_visit_at" in str(exc):
             raise HTTPException(
                 status_code=400,
-                detail="Apply backend/supabase/migrations/0010_next_visit.sql first.",
+                detail="Apply backend/supabase/migrations/0011_next_visit.sql first.",
             ) from exc
         raise
     if when:
@@ -437,7 +437,7 @@ VITAL_FIELDS = (
     "systolic", "diastolic", "weight_kg", "height_cm",
     "fasting_glucose", "hba1c", "egfr", "acr",
 )
-MIGRATION_0011 = "Apply backend/supabase/migrations/0011_patient_record.sql first."
+MIGRATION_0012 = "Apply backend/supabase/migrations/0012_patient_record.sql first."
 
 
 def _panel_patient(user: AuthUser, patient_id: UUID) -> str:
@@ -447,7 +447,7 @@ def _panel_patient(user: AuthUser, patient_id: UUID) -> str:
     return pid
 
 
-def _needs_0011(exc: Exception) -> bool:
+def _needs_0012(exc: Exception) -> bool:
     text = str(exc)
     return any(
         k in text
@@ -478,7 +478,7 @@ def patient_clinical(
         )
         ready = True
     except Exception as exc:
-        if not _needs_0011(exc):
+        if not _needs_0012(exc):
             raise
         vitals, notes, ready = [], [], False
     return {"identifiers": identifiers, "vitals": vitals, "notes": notes, "migrated": ready}
@@ -497,8 +497,8 @@ def set_identifiers(
     try:
         get_service_client().table("profiles").update(values).eq("id", pid).execute()
     except Exception as exc:
-        if _needs_0011(exc):
-            raise HTTPException(status_code=400, detail=MIGRATION_0011) from exc
+        if _needs_0012(exc):
+            raise HTTPException(status_code=400, detail=MIGRATION_0012) from exc
         raise
     audit_by(user, "patient.identifiers", "profile", pid, {"fields": sorted(k for k, v in values.items() if v)})
     return values
@@ -518,8 +518,8 @@ def add_vitals(
     try:
         res = get_service_client().table("patient_vitals").insert(row).execute()
     except Exception as exc:
-        if _needs_0011(exc):
-            raise HTTPException(status_code=400, detail=MIGRATION_0011) from exc
+        if _needs_0012(exc):
+            raise HTTPException(status_code=400, detail=MIGRATION_0012) from exc
         raise
     audit_by(user, "vitals.create", "profile", pid, {"fields": sorted(k for k in row if k in VITAL_FIELDS)})
     return (res.data or [row])[0]
@@ -540,8 +540,8 @@ def add_note(
             .execute()
         )
     except Exception as exc:
-        if _needs_0011(exc):
-            raise HTTPException(status_code=400, detail=MIGRATION_0011) from exc
+        if _needs_0012(exc):
+            raise HTTPException(status_code=400, detail=MIGRATION_0012) from exc
         raise
     note = (res.data or [{}])[0]
     note["doctor"] = {"full_name": user.full_name}

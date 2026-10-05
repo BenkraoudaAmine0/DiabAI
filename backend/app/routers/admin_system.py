@@ -20,7 +20,7 @@ from app.services.supabase_client import get_service_client
 
 router = APIRouter()
 
-MIGRATION_0012 = "Apply backend/supabase/migrations/0012_admin_security.sql first."
+MIGRATION_0013 = "Apply backend/supabase/migrations/0013_admin_security.sql first."
 Task = Literal["diabetes_risk", "retina", "foot", "neck", "embeddings", "llm", "other"]
 Status = Literal["candidate", "staging", "validated", "production", "monitoring", "retired"]
 REVIEW_STATUSES = ("candidate", "staging", "monitoring")
@@ -155,7 +155,7 @@ def register_model(req: ModelCreate, user: AuthUser = Depends(require_admin)) ->
         text = str(exc)
         if "duplicate" in text or "23505" in text:
             raise HTTPException(status_code=409, detail="This name and version are already registered.") from exc
-        raise HTTPException(status_code=409, detail=MIGRATION_0012) from exc
+        raise HTTPException(status_code=409, detail=MIGRATION_0013) from exc
     created = (res.data or [row])[0]
     audit_by(user, "model.register", "model", created.get("id"), {"name": req.name, "version": req.version, "status": req.status})
     return created

@@ -104,7 +104,7 @@ export default function AdminDoctorsPage() {
 
       <p className="text-[11px] text-adm-muted">{t("adm.doc.verifyNote")}</p>
       {msg && <Notice ok={msg.ok}>{msg.text}</Notice>}
-      {data && !data.verification_available && <Notice ok={false}>{t("adm.migration0012")}</Notice>}
+      {data && !data.verification_available && <Notice ok={false}>{t("adm.migration0013")}</Notice>}
       {error && <StateBox kind="error" message={error} onRetry={reload} />}
       {loading && <StateBox kind="loading" />}
 

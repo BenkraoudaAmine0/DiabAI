@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- DiabAI 0012 — security & administration backend (Figma 05 Admin Screens +
--- doctor settings). Run ONCE in Supabase SQL Editor (after 0011). Safe to
+-- DiabAI 0013 — security & administration backend (Figma 05 Admin Screens +
+-- doctor settings). Run ONCE in Supabase SQL Editor (after 0012). Safe to
 -- re-run.
 --   • audit_log        append-only, hash-chained activity trail
 --   • app_errors       error alerts with a triage workflow

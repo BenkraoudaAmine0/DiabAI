@@ -1,4 +1,4 @@
-"""Audit trail + error log (migration 0012) — best-effort writes that never
+"""Audit trail + error log (migration 0013) — best-effort writes that never
 break the request that triggered them.
 
 audit_log is append-only and hash-chained in the database (each row stores
@@ -66,7 +66,7 @@ def audit(
             }
         ).execute()
     except Exception:
-        pass  # auditing is advisory until migration 0012 is applied
+        pass  # auditing is advisory until migration 0013 is applied
 
 
 def audit_by(

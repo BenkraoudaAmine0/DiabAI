@@ -38,7 +38,7 @@ def me(user: AuthUser = Depends(get_current_user)) -> dict:
         )
         pending = rows[0] if rows else None
     except Exception:
-        pass  # before migration 0012
+        pass  # before migration 0013
     return {
         "profile": {
             k: profile.get(k)
@@ -65,12 +65,12 @@ def update_professional(req: ProfessionalRequest, user: AuthUser = Depends(get_c
         if "specialty" in str(exc) or "license_number" in str(exc):
             raise HTTPException(
                 status_code=400,
-                detail="Apply backend/supabase/migrations/0011_patient_record.sql first.",
+                detail="Apply backend/supabase/migrations/0012_patient_record.sql first.",
             ) from exc
         if "facility" in str(exc):
             raise HTTPException(
                 status_code=400,
-                detail="Apply backend/supabase/migrations/0012_admin_security.sql first.",
+                detail="Apply backend/supabase/migrations/0013_admin_security.sql first.",
             ) from exc
         raise
     audit_by(user, "profile.update", "profile", user.id, {"fields": sorted(values)})
@@ -137,7 +137,7 @@ def request_deletion(req: DeletionRequest, user: AuthUser = Depends(get_current_
     except Exception as exc:
         raise HTTPException(
             status_code=400,
-            detail="Apply backend/supabase/migrations/0012_admin_security.sql first.",
+            detail="Apply backend/supabase/migrations/0013_admin_security.sql first.",
         ) from exc
     audit_by(user, "account.deletion_request", "profile", user.id)
     return (row or [{}])[0]

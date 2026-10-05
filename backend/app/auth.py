@@ -57,7 +57,7 @@ def mfa_required_for_privileged() -> bool:
                 .data
             )
             _policy["require"] = bool(rows) and rows[0].get("value") is True
-        except Exception:  # before migration 0012
+        except Exception:  # before migration 0013
             _policy["require"] = False
         _policy["checked_at"] = time.time()
     return _policy["require"]

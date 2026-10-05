@@ -29,7 +29,7 @@ interface PanelPatientInfo {
   sex: string | null;
   phone: string | null;
   created_at?: string;
-  next_visit_at?: string | null; // migration 0010
+  next_visit_at?: string | null; // migration 0011
 }
 
 interface RecordsResponse {
@@ -460,7 +460,7 @@ export default function PatientDetailPage({
 function MigrationNotice({ clinical }: { clinical: PatientClinical | null }) {
   const { t } = useI18n();
   if (!clinical || clinical.migrated) return null;
-  return <p className="rounded-lg bg-[#fffbeb] px-4 py-3 text-[13px] font-semibold text-status-prediabetes">{t("pp.needs0011")}</p>;
+  return <p className="rounded-lg bg-[#fffbeb] px-4 py-3 text-[13px] font-semibold text-status-prediabetes">{t("pp.needs0012")}</p>;
 }
 
 function IdentifiersForm({

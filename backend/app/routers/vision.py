@@ -130,7 +130,7 @@ def review_scan(
     scan_id: UUID, req: ScanReviewRequest, user: AuthUser = Depends(get_current_user)
 ) -> dict:
     """Clinician decision on a scan: confirm or modify the model's grade, and
-    optionally refer the patient to a specialist (needs migration 0011)."""
+    optionally refer the patient to a specialist (needs migration 0012)."""
     if user.role not in ("doctor", "admin"):
         raise HTTPException(status_code=403, detail="Doctor access only")
     svc = get_service_client()
@@ -157,7 +157,7 @@ def review_scan(
         if "review_status" in str(exc) or "reviewed_" in str(exc) or "referred" in str(exc):
             raise HTTPException(
                 status_code=400,
-                detail="Apply backend/supabase/migrations/0011_patient_record.sql first.",
+                detail="Apply backend/supabase/migrations/0012_patient_record.sql first.",
             ) from exc
         raise
     audit_by(user, "scan.review", "profile", rows[0].get("patient_id"),

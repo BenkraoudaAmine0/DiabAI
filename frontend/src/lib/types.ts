@@ -10,7 +10,7 @@ export interface Profile {
   phone: string | null;
   created_by: string | null;
   created_at?: string;
-  next_visit_at?: string | null; // migration 0010 — set by a doctor
+  next_visit_at?: string | null; // migration 0011 — set by a doctor
 }
 
 export interface TopFactor {
@@ -337,7 +337,7 @@ export interface AdminUser {
   };
 }
 
-// ── doctor › patient profile (migration 0011) ───────────────────────────────
+// ── doctor › patient profile (migration 0012) ───────────────────────────────
 export type BloodGroup = "O+" | "O-" | "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-";
 
 export interface PatientVitals {

@@ -242,7 +242,7 @@ const drEn: Record<string, string> = {
   "pp.btnM2": "Type classification (M2)",
   "pp.noRetina": "No retinal screening for this patient.",
   "pp.notReferable": "Not referable",
-  "pp.needs0011": "Apply migration 0011_patient_record.sql in Supabase to save this data.",
+  "pp.needs0012": "Apply migration 0012_patient_record.sql in Supabase to save this data.",
   "pp.saved": "Saved",
   "pp.privacyNote": "The national ID number is not collected (data minimisation, Loi 18-07).",
   "pp.addMeasure": "Add a measurement",
@@ -486,6 +486,7 @@ const drEn: Record<string, string> = {
   "auth.mfaVerify": "Verify",
   "auth.mfaOther": "Use another account",
   "ds.mfaRequired": "Your organisation requires two-factor authentication for your role: turn it on below to continue.",
+  "diabetes.running": "Running the assessment…",
 };
 
 export default drEn;

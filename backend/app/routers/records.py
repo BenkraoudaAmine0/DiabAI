@@ -55,7 +55,7 @@ def my_summary(user: AuthUser = Depends(get_current_user)) -> dict:
     ]
     return {
         "last_check_at": _latest(preds + scans),
-        "next_visit_at": profile.get("next_visit_at"),  # absent before 0010
+        "next_visit_at": profile.get("next_visit_at"),  # absent before 0011
         "doctors": doctors,
     }
 

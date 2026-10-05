@@ -21,7 +21,7 @@ from app.services.supabase_client import get_service_client
 
 router = APIRouter()
 
-MIGRATION_0012 = "Apply backend/supabase/migrations/0012_admin_security.sql first."
+MIGRATION_0013 = "Apply backend/supabase/migrations/0013_admin_security.sql first."
 AUDIT_COLUMNS = "id, chain_seq, actor_id, actor_name, actor_role, action, target_type, target_id, detail, created_at, hash"
 PERIODS = {"today": None, "7d": 7, "30d": 30, "all": None}
 
@@ -34,7 +34,7 @@ def _since(period: str) -> Optional[str]:
     return (now - timedelta(days=days)).isoformat() if days else None
 
 
-def _missing_0012(exc: Exception) -> bool:
+def _missing_0013(exc: Exception) -> bool:
     text = str(exc)
     return any(k in text for k in ("audit_log", "app_errors", "deletion_requests", "app_settings", "audit_verify_chain", "PGRST"))
 
@@ -130,8 +130,8 @@ def audit_log(
             .limit(20000).execute().data or []
         )
     except Exception as exc:
-        if _missing_0012(exc):
-            raise HTTPException(status_code=409, detail=MIGRATION_0012) from exc
+        if _missing_0013(exc):
+            raise HTTPException(status_code=409, detail=MIGRATION_0013) from exc
         raise
     picked = [r for r in rows if _matches(r, category_, q.strip().lower())][:300]
     actors = {r["actor_id"]: r.get("actor_name") for r in rows if r.get("actor_id")}
@@ -155,8 +155,8 @@ def audit_export(
     try:
         rows = _audit_rows(svc, period, str(actor) if actor else None, 10000)
     except Exception as exc:
-        if _missing_0012(exc):
-            raise HTTPException(status_code=409, detail=MIGRATION_0012) from exc
+        if _missing_0013(exc):
+            raise HTTPException(status_code=409, detail=MIGRATION_0013) from exc
         raise
     rows = [r for r in rows if _matches(r, category_, q.strip().lower())]
     buf = io.StringIO()
@@ -183,8 +183,8 @@ def audit_integrity(user: AuthUser = Depends(require_admin)) -> dict:
     try:
         res = get_service_client().rpc("audit_verify_chain", {}).execute().data
     except Exception as exc:
-        if _missing_0012(exc):
-            raise HTTPException(status_code=409, detail=MIGRATION_0012) from exc
+        if _missing_0013(exc):
+            raise HTTPException(status_code=409, detail=MIGRATION_0013) from exc
         raise
     row = (res or [{}])[0] if isinstance(res, list) else (res or {})
     return {
@@ -246,8 +246,8 @@ def alerts(
             .limit(5000).execute().data or []
         )
     except Exception as exc:
-        if _missing_0012(exc):
-            raise HTTPException(status_code=409, detail=MIGRATION_0012) from exc
+        if _missing_0013(exc):
+            raise HTTPException(status_code=409, detail=MIGRATION_0013) from exc
         raise
     needle = q.strip().lower()
     if needle:
@@ -420,7 +420,7 @@ def update_security(req: SecuritySettings, user: AuthUser = Depends(require_admi
             on_conflict="key",
         ).execute()
     except Exception as exc:
-        raise HTTPException(status_code=409, detail=MIGRATION_0012) from exc
+        raise HTTPException(status_code=409, detail=MIGRATION_0013) from exc
     forget_mfa_policy()
     audit_by(user, "security.policy", "setting", "require_mfa_privileged", {"value": req.require_mfa_privileged})
     return req.model_dump()
@@ -437,8 +437,8 @@ def deletion_requests(user: AuthUser = Depends(require_admin)) -> dict:
             .order("created_at", desc=True).limit(200).execute().data or []
         )
     except Exception as exc:
-        if _missing_0012(exc):
-            raise HTTPException(status_code=409, detail=MIGRATION_0012) from exc
+        if _missing_0013(exc):
+            raise HTTPException(status_code=409, detail=MIGRATION_0013) from exc
         raise
     ids = list({r["user_id"] for r in rows})
     people = {}

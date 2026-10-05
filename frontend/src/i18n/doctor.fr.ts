@@ -242,7 +242,7 @@ const drFr: Record<string, string> = {
   "pp.btnM2": "Classification du Type (M2)",
   "pp.noRetina": "Aucun dépistage rétinien pour ce patient.",
   "pp.notReferable": "Non référable",
-  "pp.needs0011": "Appliquez la migration 0011_patient_record.sql dans Supabase pour enregistrer ces données.",
+  "pp.needs0012": "Appliquez la migration 0012_patient_record.sql dans Supabase pour enregistrer ces données.",
   "pp.saved": "Enregistré",
   "pp.privacyNote": "Le numéro d’identité nationale n’est pas collecté (minimisation des données, Loi 18-07).",
   "pp.addMeasure": "Ajouter une mesure",
@@ -486,6 +486,7 @@ const drFr: Record<string, string> = {
   "auth.mfaVerify": "Vérifier",
   "auth.mfaOther": "Utiliser un autre compte",
   "ds.mfaRequired": "Votre établissement exige la double authentification pour votre rôle : activez-la ci-dessous pour continuer.",
+  "diabetes.running": "Évaluation en cours…",
 };
 
 export default drFr;

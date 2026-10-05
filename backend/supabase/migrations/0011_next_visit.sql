@@ -1,6 +1,6 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- DiabAI 0010 — next visit date + visit reminders (patient portal, Figma)
--- Run ONCE in Supabase SQL Editor (after 0001–0009). Safe to re-run.
+-- DiabAI 0011 — next visit date + visit reminders (patient portal, Figma)
+-- Run ONCE in Supabase SQL Editor (after 0010). Safe to re-run.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- The patient's next clinic visit, set by one of their doctors (backend,

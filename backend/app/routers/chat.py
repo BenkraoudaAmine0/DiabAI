@@ -80,7 +80,7 @@ def _patient_brief(svc, user: AuthUser, patient_id: str) -> str:
             parts.append("hypertension")
         if _yes(inp.get("heart_disease")):
             parts.append("heart disease")
-    try:  # latest vitals (migration 0011)
+    try:  # latest vitals (migration 0012)
         rows = (
             svc.table("patient_vitals")
             .select("systolic, diastolic, fasting_glucose, hba1c, egfr, acr, measured_at")

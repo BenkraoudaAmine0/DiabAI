@@ -63,7 +63,7 @@ function RegisterForm() {
     setError(null);
     try {
       const supabase = getSupabaseBrowserClient();
-      // the database keeps these on the new profile (migration 0012); the
+      // the database keeps these on the new profile (migration 0013); the
       // role is limited to doctor/patient there whatever is sent
       const data =
         role === "doctor"
