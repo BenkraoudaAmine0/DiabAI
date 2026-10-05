@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     # {frontend_url}/auth/callback?next=/set-password (allow {frontend_url}/**
     # in Supabase → Auth → URL Configuration → Redirect URLs).
     frontend_url: str = "http://localhost:3000"
+    app_env: str = "development"  # shown in the admin sidebar
     cors_origins: str = "http://localhost:3000"
     signed_url_ttl: int = 60 * 60 * 24  # 24h
 

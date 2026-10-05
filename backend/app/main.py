@@ -1,15 +1,24 @@
 """DiabAI FastAPI entrypoint."""
 
 import threading
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
 from app.routers import (
     admin,
+    admin_security,
+    admin_system,
     chat,
+    dashboard,
+    me,
     diabetes,
     kb,
     notifications,
@@ -17,7 +26,8 @@ from app.routers import (
     records,
     vision,
 )
-from app.services import diabetes_service, embeddings, kb_ingest_service, vision_service
+from app.services import diabetes_service, embeddings, kb_ingest_service, metrics, vision_service
+from app.services.audit_service import log_error
 
 
 @asynccontextmanager
@@ -78,12 +88,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def request_metrics(request: Request, call_next):
+    """Requests/min and latency for the admin "System health" page."""
+    start = time.perf_counter()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        metrics.record(request.url.path, status, (time.perf_counter() - start) * 1000)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def log_server_errors(request: Request, exc: StarletteHTTPException):
+    """5xx answers become error alerts (503 = a model or key is missing)."""
+    if exc.status_code >= 500:
+        await run_in_threadpool(
+            log_error,
+            f"{request.method} {request.url.path}",
+            str(exc.detail),
+            "medium" if exc.status_code == 503 else "high",
+            {"status": exc.status_code},
+        )
+    return await http_exception_handler(request, exc)
+
+
+@app.exception_handler(Exception)
+async def log_crashes(request: Request, exc: Exception):
+    await run_in_threadpool(
+        log_error,
+        f"{request.method} {request.url.path}",
+        f"{type(exc).__name__}: {exc}",
+        "critical",
+        {"status": 500},
+    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(diabetes.router, prefix="/api/diabetes", tags=["diabetes"])
 app.include_router(vision.router, prefix="/api", tags=["vision"])
 app.include_router(patients.router, prefix="/api/patients", tags=["patients"])
 app.include_router(records.router, prefix="/api/records", tags=["records"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(admin_security.router, prefix="/api/admin", tags=["admin"])
+app.include_router(admin_system.router, prefix="/api/admin", tags=["admin"])
+app.include_router(me.router, prefix="/api/me", tags=["me"])
 app.include_router(kb.router, prefix="/api/admin/kb", tags=["knowledge-base"])
 app.include_router(
     notifications.router, prefix="/api/notifications", tags=["notifications"]
@@ -94,6 +147,8 @@ app.include_router(
 def health() -> dict:
     return {
         "status": "ok",
+        "version": app.version,
+        "environment": get_settings().app_env,
         "models": {
             "diabetes": True,
             **vision_service.availability(),

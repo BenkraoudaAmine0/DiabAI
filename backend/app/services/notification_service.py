@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 from app.services.supabase_client import get_service_client
 
-KINDS = ("prediction_recorded", "scan_recorded", "panel_added")
+KINDS = ("prediction_recorded", "scan_recorded", "panel_added", "visit_reminder")
 
 
 def notify(

@@ -87,6 +87,8 @@ class RagState(TypedDict, total=False):
     question: str
     history: list[BaseMessage]
     lang: str
+    friendly: bool  # patient setting: simple, supportive wording
+    patient_context: Optional[str]  # de-identified record summary (clinicians)
     search_query: str
     chunks: list[dict]
     answer: str
@@ -230,6 +232,17 @@ def _generate(state: RagState, config: RunnableConfig) -> RagState:
         + f"\n\nQuestion: {state['question']}\n\n"
         "Answer using the context above, citing sources as [n]:"
     )
+    if state.get("patient_context"):
+        user_prompt += (
+            "\n(The clinician selected a patient record — de-identified summary: "
+            f"{state['patient_context']}. Relate the answer to this patient where "
+            "the sources allow it; never invent values that are not listed.)"
+        )
+    if state.get("friendly"):
+        user_prompt += (
+            "\n(Write for a patient: short sentences, everyday words, a calm "
+            "and supportive tone; explain any medical term you must use.)"
+        )
     text = str(
         _answer_chain().invoke(
             {"history": state.get("history") or [], "input": user_prompt}, config
@@ -277,6 +290,8 @@ def answer(
     user_id: Optional[str] = None,
     history: Optional[list[dict]] = None,
     lang: Optional[str] = None,
+    friendly: bool = False,
+    patient_context: Optional[str] = None,
 ) -> tuple[str, list[dict]]:
     """Returns (answer_text, sources). Sources carry [n] indices for the UI."""
     _require_key()
@@ -286,6 +301,8 @@ def answer(
             "question": question,
             "history": to_history(history or []),
             "lang": lang if lang in NO_CONTEXT else "en",
+            "friendly": friendly,
+            "patient_context": patient_context,
         },
         config={"callbacks": [handler]},
     )

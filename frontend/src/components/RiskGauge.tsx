@@ -3,8 +3,9 @@
  *  decision threshold marked. */
 
 const ZONES: [number, number, string][] = [
+  // Figma 04 Design System status colours
   [0, 0.3, "#16a34a"],
-  [0.3, 0.5, "#f59e0b"],
+  [0.3, 0.5, "#d97706"],
   [0.5, 0.75, "#ea580c"],
   [0.75, 1, "#dc2626"],
 ];
@@ -65,7 +66,7 @@ export default function RiskGauge({
         x2={nx}
         y2={ny}
         stroke="#0f172a"
-        strokeWidth={4}
+        strokeWidth={3}
         strokeLinecap="round"
         style={{ transition: "all 0.6s ease-out" }}
       />

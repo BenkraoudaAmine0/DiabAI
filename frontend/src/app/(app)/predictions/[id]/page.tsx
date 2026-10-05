@@ -3,26 +3,22 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, CircleAlert, FileText, Shield } from "lucide-react";
 
+import ClinicalBadge from "@/components/ClinicalBadge";
 import RiskGauge from "@/components/RiskGauge";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
+import { clinicalStatusOf, shortId } from "@/lib/clinical";
 import { formatDateTime } from "@/lib/format";
 import {
   STATUS_BADGE,
-  TIER_BADGE,
   downloadReport,
   formatNumber,
   formatPct,
   tierKey,
 } from "@/lib/prediction";
 import type { ClinicalValue, PredictionReport, ReviewStatus } from "@/lib/types";
-
-const VALUE_COLOR: Record<ClinicalValue["status"], string> = {
-  normal: "text-slate-900",
-  elevated: "text-amber-600",
-  high: "text-red-600",
-};
 
 const YES_NO_KEYS = ["hypertension", "heart_disease", "smoking_history"];
 const SMOKING_KEYS: Record<string, string> = {
@@ -176,190 +172,160 @@ export default function PredictionReportPage({
 
   const backHref = canReview ? `/doctor/patients/${p.patient_id}` : "/patient/history";
 
+  const status = clinicalStatusOf(p);
+  const confidence = Math.max(p.probability, 1 - p.probability);
+  const FACTOR_COLORS = ["bg-status-critical", "bg-status-prediabetes", "bg-brand-teal", "bg-status-insufficient", "bg-slate-400"];
+  const valueTone = (v: ClinicalValue | undefined) =>
+    !v ? "text-slate-900" : v.status === "high" || v.status === "elevated" ? "text-status-critical" : "text-slate-900";
+  const missingSecondary = !values.get("bmi");
+
   return (
-    <div className="space-y-5">
-      <Link href={backHref} className="text-sm font-semibold text-teal-600">
-        ← {canReview ? t("report.backToPatient") : t("history.title")}
+    <div className="flex flex-col gap-6">
+      <Link href={backHref} className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-brand">
+        <ArrowLeft size={14} />
+        {canReview ? t("report.backToPatient") : t("history.title")}
       </Link>
 
-      {/* patient bar */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
+      {/* Patient-Context-Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 text-[13px] text-slate-500">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-50 text-[10px] font-bold text-slate-600">
             {initials(patient.full_name)}
           </span>
-          <div>
-            <p className="font-semibold text-slate-900">{patient.full_name ?? "—"}</p>
-            <p className="text-xs text-slate-500">
-              {t(p.input.gender === "male" ? "common.male" : "common.female")},{" "}
-              {formatNumber(p.input.age, lang)} {t("common.years")}
-            </p>
-          </div>
-        </div>
-        <p className="text-xs text-slate-500">
-          ID <span className="font-mono text-slate-700">{p.id.slice(0, 8).toUpperCase()}</span>
-        </p>
-        <p className="text-xs text-slate-500">
-          {t("report.assessed")}: <span className="text-slate-700">{formatDateTime(p.created_at, lang)}</span>
-        </p>
-        {p.doctor_name && (
-          <p className="text-xs text-slate-500">
-            {t("report.requestedBy")}: <span className="text-slate-700">{p.doctor_name}</span>
-          </p>
-        )}
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_BADGE[p.status]}`}>
-            {t(`status.${p.status}`)}
+          <span className="text-[15px] font-bold text-slate-900">{patient.full_name ?? "—"}</span>
+          <span className="h-2.5 w-px bg-slate-200" aria-hidden />
+          <span>
+            {t(p.input.gender === "male" ? "common.male" : "common.female")}, {formatNumber(p.input.age, lang)} {t("common.years")}
           </span>
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${TIER_BADGE[tier]}`}>
-            {t(`tier.${tier}`)}
+          <span className="h-2.5 w-px bg-slate-200" aria-hidden />
+          <span>
+            ID: <span className="font-mono">PT-{shortId(p.patient_id)}</span>
+          </span>
+          <span className="h-2.5 w-px bg-slate-200" aria-hidden />
+          <span>
+            {t("report.assessed")}: <span className="font-mono">{formatDateTime(p.created_at, lang)}</span>
           </span>
         </div>
+        <span className="flex flex-wrap items-center gap-3">
+          <span className={`rounded-md px-2.5 py-1 text-xs font-bold ${STATUS_BADGE[p.status]}`}>{t(`status.${p.status}`)}</span>
+          <span className="text-[13px] text-slate-500">{t("report.riskStatus")}</span>
+          <ClinicalBadge status={status} withIcon />
+        </span>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{t("report.title")}</h1>
-        <p className="mt-1 text-sm text-slate-500">{t("report.subtitle")}</p>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-extrabold text-slate-900">{t("report.title")}</h1>
+        <p className="text-sm text-slate-500">{t("report.subtitle")}</p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
-        {/* ── left: risk + interpretation ── */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-center text-sm font-semibold text-slate-700">{t("report.riskLevel")}</h2>
-          <div className="mt-3">
-            <RiskGauge
-              probability={p.probability}
-              threshold={p.threshold}
-              label={`${t("report.probability")}: ${formatPct(p.probability, lang)}`}
-            />
-          </div>
-          <div className="mt-2 flex flex-col items-center gap-2 text-center">
-            <p className="text-4xl font-bold tracking-tight text-slate-900">
-              {formatPct(p.probability, lang)}
-            </p>
-            <p className={`text-sm font-semibold ${diabetic ? "text-red-600" : "text-emerald-600"}`}>
-              {t(diabetic ? "result.diabetic" : "result.nonDiabetic")}
-            </p>
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        {/* Left-Col-Gauge */}
+        <section className="flex flex-col gap-6 rounded-xl border border-slate-200 bg-white p-6">
+          <div className="flex flex-col items-center gap-4">
+            <h2 className="text-[15px] font-bold text-slate-700">{t("report.riskLevel")}</h2>
+            <div className="w-full max-w-[300px]">
+              <RiskGauge
+                probability={p.probability}
+                threshold={p.threshold}
+                label={`${t("report.probability")}: ${formatPct(p.probability, lang)}`}
+              />
+            </div>
+            <p className="font-mono text-3xl font-bold text-slate-900">{formatPct(p.probability, lang)}</p>
             <span
-              className={`rounded-lg px-3 py-1 text-xs font-bold uppercase tracking-wide ${TIER_BADGE[tier]}`}
+              className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold uppercase ${
+                diabetic ? "bg-[#fee2e2] text-status-critical" : tier === "prediabetic" ? "bg-[#fef3c7] text-status-prediabetes" : "bg-[#dcfce7] text-status-normal"
+              }`}
             >
-              {t(`tier.${tier}`)}
+              <CircleAlert size={16} />
+              {t(`tier.${tier}`)} : {t(diabetic ? "result.diabetic" : "result.nonDiabetic")}
             </span>
           </div>
-
-          <div className="mt-6 border-t border-slate-100 pt-5">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-slate-700">{t("report.probability")}</span>
-              <span className="font-semibold text-slate-900">{formatPct(p.probability, lang)}</span>
+          <div className="h-px bg-slate-200" />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="font-semibold text-slate-700">{t("report.confidence")}</span>
+              <span className="font-mono text-sm font-bold text-brand">{formatPct(confidence, lang)}</span>
             </div>
-            <div className="relative mt-2 h-2.5 rounded-full bg-slate-100">
-              <div
-                className={`h-2.5 rounded-full ${diabetic ? "bg-red-500" : "bg-emerald-500"}`}
-                style={{ width: `${Math.max(1, p.probability * 100)}%` }}
-              />
-              {p.threshold != null && (
-                <span
-                  className="absolute -top-1 h-4.5 w-0.5 bg-slate-800"
-                  style={{ left: `${p.threshold * 100}%` }}
-                  aria-hidden
-                />
-              )}
+            <div className="h-2 overflow-hidden rounded bg-slate-200">
+              <div className="h-full bg-brand" style={{ width: `${confidence * 100}%` }} />
             </div>
             {p.threshold != null && (
-              <p className="mt-1.5 text-xs text-slate-400">
-                {t("report.threshold", { pct: formatPct(p.threshold, lang) })}
-              </p>
+              <p className="text-xs text-slate-400">{t("report.threshold", { pct: formatPct(p.threshold, lang) })}</p>
             )}
           </div>
-
-          <div className="mt-5 rounded-xl bg-slate-50 p-4">
+          <div className="flex flex-col gap-2 rounded-lg bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-slate-800">{t("report.interpretation")}</h3>
+              <h3 className="text-sm font-semibold text-slate-900">{t("report.interpretation")}</h3>
               {canReview && p.interpretation && !interpBusy && (
-                <button
-                  onClick={() => interpret(true)}
-                  className="text-xs font-semibold text-teal-600 hover:text-teal-800"
-                >
+                <button onClick={() => interpret(true)} className="text-xs font-semibold text-brand hover:underline">
                   ↻ {t("report.regenerate")}
                 </button>
               )}
             </div>
             {interpBusy ? (
-              <div className="mt-3 space-y-2" aria-live="polite">
+              <div className="space-y-2" aria-live="polite">
                 <p className="text-xs text-slate-400">{t("report.generating")}</p>
                 <div className="h-3 w-full animate-pulse rounded bg-slate-200" />
                 <div className="h-3 w-11/12 animate-pulse rounded bg-slate-200" />
                 <div className="h-3 w-4/5 animate-pulse rounded bg-slate-200" />
               </div>
             ) : interpError ? (
-              <div className="mt-2 text-sm text-red-600">
+              <p className="text-[13px] text-red-600">
                 {t("report.interpretationFailed", { error: interpError })}{" "}
                 <button onClick={() => interpret(false)} className="font-semibold underline">
                   {t("report.retry")}
                 </button>
-              </div>
+              </p>
             ) : p.interpretation ? (
               <>
-                <p className="mt-2 text-sm leading-relaxed text-slate-700">{p.interpretation}</p>
-                <p className="mt-3 text-xs text-slate-400">{t("report.aiNote")}</p>
+                <p className="text-[13px] leading-[1.5] text-slate-700">{p.interpretation}</p>
+                <p className="text-[11px] text-slate-400">{t("report.aiNote")}</p>
               </>
             ) : (
-              <p className="mt-2 text-sm text-slate-400">{t("report.noInterpretation")}</p>
+              <p className="text-[13px] text-slate-400">{t("report.noInterpretation")}</p>
             )}
           </div>
         </section>
 
-        {/* ── right: values + factors ── */}
-        <div className="space-y-5">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-800">{t("report.values")}</h2>
-            <dl className="mt-3 divide-y divide-slate-100">
+        {/* Right-Col-Details */}
+        <div className="flex flex-col gap-5">
+          <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5">
+            <h2 className="text-sm font-bold text-slate-900">{t("report.values")}</h2>
+            <dl className="flex flex-col gap-2 text-[13px]">
               {p.values.map((v) => (
-                <div key={v.key} className="flex items-center justify-between gap-3 py-2">
-                  <dt className="text-sm text-slate-600">
-                    {t(`feature.${v.key}`)}
-                    {["HbA1c_level", "blood_glucose_level", "bmi"].includes(v.key) && (
-                      <span className="block text-[11px] text-slate-400">{t(`ref.${v.key}`)}</span>
-                    )}
-                  </dt>
-                  <dd className="text-right">
-                    <span className={`text-sm font-bold tabular-nums ${VALUE_COLOR[v.status]}`}>
-                      {valueText(v)}
-                    </span>
-                    {v.status !== "normal" && (
-                      <span className={`block text-[11px] font-medium ${VALUE_COLOR[v.status]}`}>
-                        {flagText(v)}
-                      </span>
-                    )}
+                <div key={v.key} className="flex items-center justify-between gap-3 border-b border-slate-200 pb-2">
+                  <dt className="text-slate-500">{t(`feature.${v.key}`)}</dt>
+                  <dd className={`text-right font-mono font-bold ${valueTone(v)}`}>
+                    {valueText(v)}
+                    {v.status !== "normal" && <span className="block font-sans text-[11px] font-medium">{flagText(v)}</span>}
                   </dd>
                 </div>
               ))}
             </dl>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-800">{t("report.factors")}</h2>
-            <p className="mt-0.5 text-xs text-slate-400">{t("report.factorsHint")}</p>
-            <ol className="mt-3 space-y-3">
+          <section className="flex flex-col gap-3.5 rounded-xl border border-slate-200 bg-white p-5">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">{t("report.factors")}</h2>
+              <p className="text-[11px] text-slate-400">{t("report.factorsHint")}</p>
+            </div>
+            <ol className="flex flex-col gap-3">
               {factors.map((f, i) => {
                 const up = f.value > 0;
                 return (
-                  <li key={f.feature}>
-                    <div className="flex items-baseline justify-between gap-2 text-sm">
-                      <span className="text-slate-700">
+                  <li key={f.feature} className="flex flex-col gap-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="truncate text-xs font-semibold text-slate-700">
                         {i + 1}. {t(`feature.${f.feature}`)}
                       </span>
-                      <span className="shrink-0 text-xs tabular-nums text-slate-500">
-                        {valueText(values.get(f.feature))} ·{" "}
-                        <strong className={up ? "text-red-600" : "text-emerald-600"}>
-                          {up ? "+" : "−"}
-                          {formatNumber(Math.abs(f.value), lang)}
-                        </strong>
+                      <span className="shrink-0 font-mono text-[11px] font-bold text-slate-500">
+                        {valueText(values.get(f.feature))} · {up ? "+" : "−"}
+                        {formatNumber(Math.abs(f.value), lang)}
                       </span>
                     </div>
-                    <div className="mt-1 h-2 rounded-full bg-slate-100">
+                    <div className="h-1.5 overflow-hidden rounded-sm bg-slate-200">
                       <div
-                        className={`h-2 rounded-full ${up ? "bg-red-500" : "bg-emerald-500"}`}
+                        className={`h-full ${up ? FACTOR_COLORS[i] ?? "bg-slate-400" : "bg-status-normal"}`}
                         style={{ width: `${Math.max(4, (Math.abs(f.value) / maxImpact) * 100)}%` }}
                       />
                     </div>
@@ -372,31 +338,34 @@ export default function PredictionReportPage({
       </div>
 
       {p.waterfall_url && (
-        <details className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-            {t("report.technical")}
-          </summary>
+        <details className="rounded-xl border border-slate-200 bg-white p-5">
+          <summary className="cursor-pointer text-sm font-semibold text-slate-700">{t("report.technical")}</summary>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={p.waterfall_url}
-            alt={t("result.waterfall")}
-            className="mx-auto mt-4 w-full max-w-3xl rounded-xl border border-slate-100"
-          />
+          <img src={p.waterfall_url} alt={t("result.waterfall")} className="mx-auto mt-4 w-full max-w-3xl rounded-lg border border-slate-100" />
         </details>
       )}
 
-      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        <span aria-hidden>🛡 </span>
-        <strong className="text-slate-800">{t("report.disclaimerTitle")}</strong> {t("report.disclaimer")}
-      </p>
+      {/* Banner-Group */}
+      <div className="flex flex-col gap-3">
+        {missingSecondary && (
+          <p className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-[#fef3c7] p-3 text-[13px] font-semibold text-status-prediabetes">
+            <CircleAlert size={16} className="shrink-0" />
+            {t("report.uncertain")}
+          </p>
+        )}
+        <p className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-100 p-3 text-[13px] text-slate-700">
+          <Shield size={16} className="shrink-0 text-slate-500" />
+          <span>
+            <strong className="font-bold">{t("report.disclaimerTitle")}</strong> {t("report.disclaimer")}
+          </span>
+        </p>
+      </div>
 
       {/* review state */}
       {reviewed && !editing && (
         <div
-          className={`flex flex-wrap items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
-            p.status === "confirmed"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-700"
+          className={`flex flex-wrap items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
+            p.status === "confirmed" ? "border-[#bbf7d0] bg-[#dcfce7] text-[#166534]" : "border-[#fca5a5] bg-[#fef2f2] text-status-critical"
           }`}
         >
           <div>
@@ -413,10 +382,7 @@ export default function PredictionReportPage({
             {p.review_note && <p className="mt-2 whitespace-pre-wrap">{p.review_note}</p>}
           </div>
           {canReview && (
-            <button
-              onClick={() => setEditing(true)}
-              className="text-xs font-semibold underline underline-offset-2"
-            >
+            <button onClick={() => setEditing(true)} className="text-xs font-semibold underline underline-offset-2">
               {t("report.changeDecision")}
             </button>
           )}
@@ -424,67 +390,76 @@ export default function PredictionReportPage({
       )}
 
       {showActions && (
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-slate-700">{t("report.note")}</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-semibold text-slate-700">{t("report.note")}</span>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             maxLength={2000}
             rows={2}
             placeholder={t("report.notePlaceholder")}
-            className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            className="rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
           />
-          {!reviewed && <span className="mt-1 block text-xs text-slate-400">{t("report.pendingDesc")}</span>}
+          {!reviewed && <span className="text-xs text-slate-400">{t("report.pendingDesc")}</span>}
         </label>
       )}
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
-        {showActions && (
-          <>
+      {/* Action-Buttons-Row */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-3">
+          {showActions && (
             <button
               onClick={() => review("confirmed")}
               disabled={saving !== null}
-              className="rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 disabled:opacity-50"
+              className="rounded-lg bg-brand px-6 py-3 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
             >
               {saving === "confirmed" ? t("auth.working") : t("report.confirm")}
             </button>
+          )}
+          {canReview && (
+            <button
+              onClick={() => router.push(`/doctor/diabetes?from=${p.id}`)}
+              className="rounded-lg border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              {t("report.modify")}
+            </button>
+          )}
+          {showActions && (
             <button
               onClick={() => review("rejected")}
               disabled={saving !== null}
-              className="rounded-xl border border-red-300 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+              className="rounded-lg border border-[#fca5a5] bg-[#fef2f2] px-6 py-3 text-sm font-semibold text-status-critical hover:bg-[#fee2e2] disabled:opacity-50"
             >
               {saving === "rejected" ? t("auth.working") : t("report.reject")}
             </button>
-            {editing && (
-              <button
-                onClick={() => {
-                  setEditing(false);
-                  setNote(p.review_note ?? "");
-                }}
-                className="px-3 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-700"
-              >
-                {t("common.cancel")}
-              </button>
-            )}
-          </>
-        )}
-        {canReview && (
+          )}
+          {showActions && editing && (
+            <button
+              onClick={() => {
+                setEditing(false);
+                setNote(p.review_note ?? "");
+              }}
+              className="px-3 py-3 text-sm font-semibold text-slate-500 hover:text-slate-700"
+            >
+              {t("common.cancel")}
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => router.push(`/doctor/diabetes?from=${p.id}`)}
-            className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            onClick={exportPdf}
+            disabled={exporting}
+            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
-            {t("report.modify")}
+            <FileText size={14} />
+            {exporting ? t("report.exporting") : t("report.export")}
           </button>
-        )}
-        <button
-          onClick={exportPdf}
-          disabled={exporting}
-          className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 sm:ml-auto"
-        >
-          {exporting ? t("report.exporting") : `⤓ ${t("report.export")}`}
-        </button>
+          <Link href={backHref} className="rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:opacity-90">
+            {canReview ? t("report.toRecord") : t("history.title")}
+          </Link>
+        </div>
       </div>
     </div>
   );

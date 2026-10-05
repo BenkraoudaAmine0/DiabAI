@@ -10,6 +10,7 @@ export interface Profile {
   phone: string | null;
   created_by: string | null;
   created_at?: string;
+  next_visit_at?: string | null; // migration 0010 — set by a doctor
 }
 
 export interface TopFactor {
@@ -147,9 +148,77 @@ export interface ScanRow {
   subject?: { full_name: string | null } | null;
 }
 
+/** Clinical status from the latest prediction (backend services/clinical). */
+export type ClinicalStatus = "diabetic" | "prediabetic" | "moderate" | "normal" | "none";
+
 export interface PanelPatient extends Profile {
   linked_at: string;
   record_counts: { predictions: number; scans: number };
+  age: number | null;
+  status: ClinicalStatus;
+  latest_prediction: {
+    id: string;
+    probability: number;
+    prediction: number;
+    risk_tier: string;
+    status?: ReviewStatus;
+    created_at: string;
+  } | null;
+  last_activity_at: string | null;
+  pending_reviews: number;
+}
+
+export interface PatientSearchResult {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  age: number | null;
+  sex: "male" | "female" | null;
+  status: ClinicalStatus;
+  last_activity_at: string | null;
+}
+
+/** A prediction or scan of a panel patient (dashboard / history). */
+export interface ActivityItem {
+  kind: "prediction" | "scan";
+  id: string;
+  patient_id: string;
+  patient_name: string;
+  age: number | null;
+  created_at: string;
+  link: string;
+  // prediction
+  status?: ClinicalStatus;
+  review?: ReviewStatus | null;
+  probability?: number;
+  // scan
+  scan_type?: "foot" | "neck" | "eye";
+  label?: string | null;
+  referable?: boolean | null;
+  confidence?: number | null;
+}
+
+export interface UrgentAlert {
+  reason: "glucose" | "hba1c" | "referable_dr";
+  value: number | null;
+  kind: "prediction" | "scan";
+  id: string;
+  patient_id: string;
+  patient_name: string;
+  age: number | null;
+  created_at: string;
+  link: string;
+}
+
+export interface DoctorDashboard {
+  kpis: {
+    patients: { total: number; new_this_week: number };
+    evaluations: { this_week: number; last_week: number };
+    retinal: { total: number; positive_to_review: number };
+    reviews: { pending: number; urgent: number };
+  };
+  recent: ActivityItem[];
+  alerts: UrgentAlert[];
 }
 
 export interface ChatSource {
@@ -178,11 +247,26 @@ export interface ChatSession {
 // ── notifications ────────────────────────────────────────────────────────────
 export interface NotificationItem {
   id: string;
-  kind: "prediction_recorded" | "scan_recorded" | "panel_added";
-  data: Record<string, string>; // { doctor, scan? } — rendered client-side
+  kind: "prediction_recorded" | "scan_recorded" | "panel_added" | "visit_reminder";
+  data: Record<string, string>; // { doctor, scan?, at? } — rendered client-side
   link: string | null;
   read: boolean;
   created_at: string;
+}
+
+// ── patient portal ───────────────────────────────────────────────────────────
+export interface CareTeamDoctor {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+/** GET /api/records/me/summary */
+export interface PatientSummary {
+  last_check_at: string | null;
+  next_visit_at: string | null;
+  doctors: CareTeamDoctor[];
 }
 
 // ── admin ────────────────────────────────────────────────────────────────────
@@ -251,4 +335,35 @@ export interface AdminUser {
     scans_performed: number;
     scans_received: number;
   };
+}
+
+// ── doctor › patient profile (migration 0011) ───────────────────────────────
+export type BloodGroup = "O+" | "O-" | "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-";
+
+export interface PatientVitals {
+  id: string;
+  measured_at: string;
+  systolic: number | null;
+  diastolic: number | null;
+  weight_kg: number | null;
+  height_cm: number | null;
+  fasting_glucose: number | null;
+  hba1c: number | null;
+  egfr: number | null;
+  acr: number | null;
+}
+
+export interface ConsultationNote {
+  id: string;
+  body: string;
+  created_at: string;
+  doctor?: { full_name: string | null } | null;
+}
+
+/** GET /api/patients/{id}/clinical */
+export interface PatientClinical {
+  identifiers: { cnas_number: string | null; chifa_number: string | null; blood_group: BloodGroup | null };
+  vitals: PatientVitals[];
+  notes: ConsultationNote[];
+  migrated: boolean;
 }

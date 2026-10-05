@@ -1,15 +1,17 @@
 """Vision scans: foot / neck (doctor + patient), eye (doctor only)."""
 
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from app.auth import AuthUser, get_current_user
-from app.schemas import ScanResult
+from app.schemas import ScanResult, ScanReviewRequest
 from app.services import vision_service
 from app.services.notification_service import notify
-from app.services.panel import ensure_panel_link
+from app.services.audit_service import audit_by
+from app.services.panel import ensure_panel_link, has_panel_link
 from app.services.supabase_client import get_service_client, signed_url
 
 router = APIRouter()
@@ -106,6 +108,7 @@ async def scan(
             actor_id=user.id,
         )
 
+    audit_by(user, "scan.create", "profile", subject_id, {"scan_id": str(scan_id), "scan_type": scan_type})
     return ScanResult(
         scan_id=scan_id,
         scan_type=scan_type,
@@ -120,3 +123,43 @@ async def scan(
         image_url=signed_url(BUCKET, storage_path),
         created_at=created_at,
     )
+
+
+@router.post("/scan/{scan_id}/review")
+def review_scan(
+    scan_id: UUID, req: ScanReviewRequest, user: AuthUser = Depends(get_current_user)
+) -> dict:
+    """Clinician decision on a scan: confirm or modify the model's grade, and
+    optionally refer the patient to a specialist (needs migration 0011)."""
+    if user.role not in ("doctor", "admin"):
+        raise HTTPException(status_code=403, detail="Doctor access only")
+    svc = get_service_client()
+    rows = svc.table("scans").select("id, patient_id, user_id, result").eq("id", str(scan_id)).limit(1).execute().data
+    if not rows:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    scan_row = rows[0]
+    if scan_row.get("patient_id"):
+        if not has_panel_link(user.id, scan_row["patient_id"]):
+            raise HTTPException(status_code=403, detail="This patient is not in your panel.")
+    elif scan_row.get("user_id") != user.id:
+        raise HTTPException(status_code=403, detail="Not your scan")
+    label = req.label or (scan_row.get("result") or {}).get("label")
+    update = {
+        "review_status": req.decision,
+        "reviewed_label": label,
+        "referred": req.referred,
+        "reviewed_by": user.id,
+        "reviewed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        svc.table("scans").update(update).eq("id", str(scan_id)).execute()
+    except Exception as exc:
+        if "review_status" in str(exc) or "reviewed_" in str(exc) or "referred" in str(exc):
+            raise HTTPException(
+                status_code=400,
+                detail="Apply backend/supabase/migrations/0011_patient_record.sql first.",
+            ) from exc
+        raise
+    audit_by(user, "scan.review", "profile", rows[0].get("patient_id"),
+             {"scan_id": str(scan_id), "decision": req.decision, "referred": req.referred})
+    return {"id": str(scan_id), **update}

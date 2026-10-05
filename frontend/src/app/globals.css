@@ -1,5 +1,69 @@
 @import "tailwindcss";
 
+/* Figma tokens (file "DiabAI — Clinical Decision Support Platform").
+   brand / status: 00 Brand + 04 Design System; pt-*: 06 Patient Screens. */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-brand: #0e7c4a;
+  --color-brand-teal: #0f766e;
+  --color-brand-ink: #0f172a;
+  --color-brand-surface: #f8fafc;
+  --color-brand-border: #e2e8f0;
+  --color-brand-switch: #e8f0ec;
+
+  --color-status-normal: #16a34a;
+  --color-status-prediabetes: #d97706;
+  --color-status-diabetes: #ea580c;
+  --color-status-critical: #dc2626;
+  --color-status-insufficient: #6b7280;
+
+  --color-pt-deep: #084e46;
+  --color-pt-primary: #0b6b5f;
+  --color-pt-mint: #d6ebe5;
+  --color-pt-mint-soft: #eaf5f1;
+  --color-pt-cream: #f7f5ef;
+  --color-pt-ink: #17332f;
+  --color-pt-muted: #667773;
+  --color-pt-border: #dde5e1;
+
+  /* Figma 05 Admin Screens */
+  --color-adm-side: #102d35;
+  --color-adm-side-active: #1a4a53;
+  --color-adm-side-muted: #9cb4ba;
+  --color-adm-bg: #f3f7f8;
+  --color-adm-soft: #f7fafa;
+  --color-adm-border: #dce7e9;
+  --color-adm-ink: #17323a;
+  --color-adm-muted: #688087;
+  --color-adm-teal: #0a8f83;
+  --color-adm-tint: #ddf4f1;
+  --color-adm-green: #17805c;
+  --color-adm-green-bg: #e3f5ec;
+  --color-adm-blue: #356cc9;
+  --color-adm-blue-bg: #e8f0ff;
+  --color-adm-amber: #b46a11;
+  --color-adm-amber-bg: #fff1da;
+  --color-adm-red: #c63b4b;
+  --color-adm-red-bg: #fce8eb;
+
+  /* Figma "Page new" public pages (landing, login, register, 404) */
+  --color-pub-bg: #f3f8f6;
+  --color-pub-line: #cfe0da;
+  --color-pub-field: #a9c8be;
+  --color-pub-primary: #087a69;
+  --color-pub-deep: #055c50;
+  --color-pub-dark: #092b26;
+  --color-pub-ink: #12352f;
+  --color-pub-muted: #60766f;
+  --color-pub-hint: #879a94;
+  --color-pub-accent: #148c8c;
+  --color-pub-mint: #ddf0e9;
+  --color-pub-mint-soft: #eaf5f1;
+}
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -8,8 +72,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* thin, quiet scrollbars for panels and chat */

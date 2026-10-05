@@ -27,6 +27,7 @@ from app.auth import AuthUser, require_admin
 from app.config import get_settings
 from app.services import embeddings
 from app.services import kb_ingest_service as kb
+from app.services.audit_service import audit_by
 from app.services.supabase_client import get_service_client
 
 router = APIRouter()
@@ -210,6 +211,7 @@ def upload_document(
         use_file_title=not title,
         use_file_author=not author,
     )
+    audit_by(user, "kb.upload", "kb_document", row.get("id"), {"title": row.get("title")})
     return {"document": row}
 
 
@@ -229,6 +231,7 @@ def delete_document(
         except Exception:
             pass  # a leftover file in Storage is harmless
     # JSON body (not 204): the frontend api() helper always parses JSON
+    audit_by(user, "kb.delete", "kb_document", str(document_id), {"title": doc.get("title")})
     return {"deleted": True, "id": str(document_id)}
 
 

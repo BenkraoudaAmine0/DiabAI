@@ -1,26 +1,34 @@
-export default function Logo({ size = 36 }: { size?: number }) {
+/* Figma 00 Brand · "Logo / Direction 1" (droplet + 5 neural nodes).
+   Horizontal variant: a 240×72 box with the 72×72 mark and the "DiabAI"
+   wordmark (Inter Bold 25, left 73 / top 23). `height` scales the whole box. */
+export default function Logo({
+  height = 72,
+  variant = "horizontal",
+  tone = "dark",
+}: {
+  height?: number;
+  variant?: "horizontal" | "icon";
+  tone?: "dark" | "light"; // light = white wordmark (admin sidebar)
+}) {
+  const scale = height / 72;
+  const width = (variant === "icon" ? 72 : 240) * scale;
   return (
-    <span className="inline-flex items-center gap-2 select-none">
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 48 48"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden
+    <span
+      className="relative inline-block shrink-0 select-none"
+      style={{ width, height }}
+      aria-label="DiabAI"
+    >
+      <span
+        className="absolute left-0 top-0 origin-top-left"
+        style={{ width: variant === "icon" ? 72 : 240, height: 72, transform: `scale(${scale})` }}
       >
-        <rect width="48" height="48" rx="12" fill="#0d9488" />
-        <path
-          d="M14 24h4l3-8 6 16 3-8h4"
-          stroke="white"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="35" cy="14" r="3.5" fill="#fbbf24" />
-      </svg>
-      <span className="text-xl font-bold tracking-tight text-slate-900">
-        Diab<span className="text-teal-600">AI</span>
+        {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
+        <img src="/brand/logo-mark.svg" alt="" className="absolute left-0 top-0 size-[72px]" />
+        {variant === "horizontal" && (
+          <span className={`absolute left-[73px] top-[23px] whitespace-nowrap text-[25px] font-bold leading-normal ${tone === "light" ? "text-white" : "text-black"}`}>
+            DiabAI
+          </span>
+        )}
       </span>
     </span>
   );

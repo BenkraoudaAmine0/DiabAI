@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.auth import AuthUser, get_current_user
 from app.schemas import ChatRequest, ChatResponse, ChatSource
 from app.services import gemini_service, rag_service
+from app.services.clinical import age_from, clinical_status
+from app.services.panel import get_profile, has_panel_link, predictions_of
 from app.services.supabase_client import get_service_client
 
 router = APIRouter()
@@ -40,6 +42,71 @@ def _history(svc, user_id: str, session_id: str) -> list[dict]:
     return list(reversed(res.data or []))
 
 
+def _yes(value) -> bool:
+    return value in (1, "1", True, "yes", "Yes")
+
+
+def _patient_brief(svc, user: AuthUser, patient_id: str) -> str:
+    """De-identified summary of a panel patient for the prompt: no name and
+    no identifiers — only age, sex and the latest measured values."""
+    if user.role not in ("doctor", "admin") or not has_panel_link(user.id, patient_id):
+        raise HTTPException(status_code=403, detail="This patient is not in your panel.")
+    profile = get_profile(patient_id)
+    preds = predictions_of(svc, [patient_id])
+    latest = preds[0] if preds else None
+    inp = (latest or {}).get("input") or {}
+
+    parts: list[str] = []
+    age = age_from(profile.get("dob"), inp.get("age"))
+    if age is not None:
+        parts.append(f"age {age}")
+    sex = profile.get("sex") or inp.get("gender")
+    if sex:
+        parts.append(f"sex {str(sex).lower()}")
+    if latest:
+        parts.append(
+            f"latest DiabAI risk assessment: {clinical_status(latest)}"
+            f" (model probability {float(latest.get('probability') or 0):.0%})"
+        )
+        for key, label in (
+            ("HbA1c_level", "HbA1c (%)"),
+            ("blood_glucose_level", "blood glucose (mg/dL)"),
+            ("bmi", "BMI (kg/m²)"),
+            ("smoking_history", "smoking"),
+        ):
+            if inp.get(key) not in (None, ""):
+                parts.append(f"{label} {inp[key]}")
+        if _yes(inp.get("hypertension")):
+            parts.append("hypertension")
+        if _yes(inp.get("heart_disease")):
+            parts.append("heart disease")
+    try:  # latest vitals (migration 0011)
+        rows = (
+            svc.table("patient_vitals")
+            .select("systolic, diastolic, fasting_glucose, hba1c, egfr, acr, measured_at")
+            .eq("patient_id", patient_id)
+            .order("measured_at", desc=True)
+            .limit(1)
+            .execute()
+            .data
+        )
+    except Exception:
+        rows = []
+    if rows:
+        v = rows[0]
+        if v.get("systolic") and v.get("diastolic"):
+            parts.append(f"blood pressure {v['systolic']}/{v['diastolic']} mmHg")
+        for key, label in (
+            ("fasting_glucose", "fasting glucose (mg/dL)"),
+            ("hba1c", "latest lab HbA1c (%)"),
+            ("egfr", "eGFR (mL/min/1.73m²)"),
+            ("acr", "urine ACR (mg/g)"),
+        ):
+            if v.get(key) is not None:
+                parts.append(f"{label} {v[key]}")
+    return "; ".join(parts) or "no recorded data yet"
+
+
 @router.post("", response_model=ChatResponse)
 def chat(
     req: ChatRequest, user: AuthUser = Depends(get_current_user)
@@ -50,10 +117,18 @@ def chat(
     if session_id:
         _own_session(svc, user.id, session_id)
         history = _history(svc, user.id, session_id)
+    patient_context = (
+        _patient_brief(svc, user, str(req.patient_id)) if req.patient_id else None
+    )
 
     try:
         answer, sources = rag_service.answer(
-            req.message, user_id=user.id, history=history, lang=req.lang
+            req.message,
+            user_id=user.id,
+            history=history,
+            lang=req.lang,
+            friendly=bool(req.friendly),
+            patient_context=patient_context,
         )
     except gemini_service.GeminiNotConfigured as exc:
         raise HTTPException(status_code=503, detail=str(exc))
