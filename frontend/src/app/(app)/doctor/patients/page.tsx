@@ -1,11 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
+import ClinicalBadge from "@/components/ClinicalBadge";
+import Icon from "@/components/Icon";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
-import type { PanelPatient } from "@/lib/types";
+import { dayLabel, daysSince, fold, shortId } from "@/lib/clinical";
+import type { ClinicalStatus, PanelPatient } from "@/lib/types";
 
 interface CreateResponse {
   patient_id: string;
@@ -17,11 +21,55 @@ interface CreateResponse {
 
 const inputCls =
   "w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100";
+const filterCls =
+  "w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] font-medium text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15";
 
+const PAGE_SIZE = 10;
+const STATUSES: ClinicalStatus[] = ["diabetic", "prediabetic", "moderate", "normal", "none"];
+type StatusFilter = "all" | "pending" | ClinicalStatus;
+type DateFilter = "all" | "7" | "30" | "90" | "older" | "never";
+
+function matchesQuery(p: PanelPatient, query: string): boolean {
+  const words = fold(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const haystack = fold(`${p.full_name ?? ""} ${p.email ?? ""} ${p.id}`);
+  const digits = query.replace(/\D/g, "");
+  const phone = (p.phone ?? "").replace(/\D/g, "");
+  return words.every((w) => haystack.includes(w)) || (digits.length >= 4 && phone.includes(digits));
+}
+
+function matchesStatus(p: PanelPatient, f: StatusFilter): boolean {
+  if (f === "all") return true;
+  if (f === "pending") return p.pending_reviews > 0;
+  return p.status === f;
+}
+
+function matchesDate(p: PanelPatient, f: DateFilter): boolean {
+  const days = daysSince(p.last_activity_at);
+  switch (f) {
+    case "all":
+      return true;
+    case "never":
+      return days === null;
+    case "older":
+      return days !== null && days > 90;
+    default:
+      return days !== null && days <= Number(f);
+  }
+}
+
+/** Figma "patient-list": search, classification and date filters, table,
+ *  pagination, loading skeleton and empty state. No wilaya. */
 export default function PatientsPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const router = useRouter();
   const [patients, setPatients] = useState<PanelPatient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [when, setWhen] = useState<DateFilter>("all");
+  const [page, setPage] = useState(1);
 
   // create modal state
   const [showCreate, setShowCreate] = useState(false);
@@ -44,20 +92,40 @@ export default function PatientsPage() {
   const [linkMsg, setLinkMsg] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const r = await api<{ patients: PanelPatient[] }>("/api/patients");
-      setPatients(r.patients);
-    } catch {
-      setPatients([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const load = useCallback(
+    () =>
+      api<{ patients: PanelPatient[] }>("/api/patients")
+        .then((r) => {
+          setPatients(r.patients);
+          setLoadError(null);
+        })
+        .catch((e) => setLoadError(e instanceof Error ? e.message : t("common.error")))
+        .finally(() => setLoading(false)),
+    [t]
+  );
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const filtered = useMemo(
+    () =>
+      patients.filter(
+        (p) => matchesQuery(p, query) && matchesStatus(p, status) && matchesDate(p, when)
+      ),
+    [patients, query, status, when]
+  );
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const current = Math.min(page, pages);
+  const shown = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+  const filtersOn = query !== "" || status !== "all" || when !== "all";
+
+  function resetFilters() {
+    setQuery("");
+    setStatus("all");
+    setWhen("all");
+    setPage(1);
+  }
 
   async function createPatient(e: React.FormEvent) {
     e.preventDefault();
@@ -114,72 +182,238 @@ export default function PatientsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {t("patients.title")}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {t("patients.subtitle")}
-          </p>
+      {/* title + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-[28px] font-extrabold text-slate-900">{t("patients.title")}</h1>
+          {!loading && (
+            <span className="rounded-full bg-[#e6f4ea] px-2 py-0.5 text-xs font-bold text-brand">
+              {t("patients.total", { n: patients.length })}
+            </span>
+          )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={resetFilters}
+            disabled={!filtersOn}
+            className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-semibold text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {t("patients.reset")}
+          </button>
           <button
             onClick={() => setShowLink(true)}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-semibold text-slate-700 hover:bg-slate-50"
           >
+            <Icon name="userPlus" size={14} />
             {t("patients.addExisting")}
           </button>
           <button
             onClick={() => setShowCreate(true)}
-            className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-[13px] font-semibold text-white hover:opacity-90"
           >
-            + {t("patients.new")}
+            <Icon name="plus" size={14} />
+            {t("patients.new")}
           </button>
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-sm text-slate-500">{t("common.loading")}</p>
-      ) : patients.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          {t("patients.empty")}
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {patients.map((p) => (
-            <Link
-              key={p.id}
-              href={`/doctor/patients/${p.id}`}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
-                  {(p.full_name ?? "?")
-                    .split(" ")
-                    .map((w) => w[0])
-                    .slice(0, 2)
-                    .join("")
-                    .toUpperCase()}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-slate-900">
-                    {p.full_name ?? "—"}
-                  </p>
-                  <p className="truncate text-xs text-slate-500">{p.email}</p>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-slate-500">
-                {p.record_counts.predictions} {t("patients.predictions")} ·{" "}
-                {p.record_counts.scans} {t("patients.scans")}
-              </p>
-              <p className="mt-2 text-xs font-semibold text-teal-600">
-                {t("patients.view")} →
-              </p>
-            </Link>
+      {/* filters */}
+      <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-[minmax(0,1fr)_200px_220px]">
+        <label className="relative block">
+          <Icon
+            name="search"
+            size={14}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+          <input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder={t("patients.searchPlaceholder")}
+            aria-label={t("patients.searchPlaceholder")}
+            className={`${filterCls} pl-[34px] font-normal`}
+          />
+        </label>
+        <select
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value as StatusFilter);
+            setPage(1);
+          }}
+          aria-label={t("patients.colStatus")}
+          className={filterCls}
+        >
+          <option value="all">{t("patients.allStatuses")}</option>
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {t(`clinical.${s}`)}
+            </option>
           ))}
-        </div>
-      )}
+          <option value="pending">{t("patients.pendingOnly")}</option>
+        </select>
+        <select
+          value={when}
+          onChange={(e) => {
+            setWhen(e.target.value as DateFilter);
+            setPage(1);
+          }}
+          aria-label={t("patients.colLast")}
+          className={filterCls}
+        >
+          <option value="all">{t("patients.anyDate")}</option>
+          <option value="7">{t("patients.last7")}</option>
+          <option value="30">{t("patients.last30")}</option>
+          <option value="90">{t("patients.last90")}</option>
+          <option value="older">{t("patients.older90")}</option>
+          <option value="never">{t("patients.never")}</option>
+        </select>
+      </div>
+
+      {/* table */}
+      <section className="rounded-xl border border-slate-200 bg-white p-6">
+        {loadError ? (
+          <p className="m-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{loadError}</p>
+        ) : !loading && patients.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <p className="text-sm text-slate-500">{t("patients.empty")}</p>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-[13px] font-semibold text-white hover:opacity-90"
+            >
+              <Icon name="plus" size={16} />
+              {t("patients.new")}
+            </button>
+          </div>
+        ) : !loading && filtered.length === 0 ? (
+          <div className="flex flex-col items-center px-6 py-12 text-center">
+            <span className="flex size-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <Icon name="xCircle" size={28} />
+            </span>
+            <p className="mt-4 text-sm font-bold text-slate-900">{t("patients.noMatch")}</p>
+            <p className="mt-1 max-w-sm text-xs text-slate-500">{t("patients.noMatchDesc")}</p>
+            <button
+              onClick={resetFilters}
+              className="mt-4 rounded-lg border border-slate-200 px-4 py-2.5 text-[13px] font-semibold text-slate-500 hover:bg-slate-50"
+            >
+              {t("patients.reset")}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
+                    <th className="pb-5 pr-4 font-bold">{t("patients.colName")}</th>
+                    <th className="w-[146px] pb-5 pr-4 font-bold">{t("patients.colId")}</th>
+                    <th className="w-[86px] pb-5 pr-4 font-bold">{t("patients.colAge")}</th>
+                    <th className="w-[176px] pb-5 pr-4 font-bold">{t("patients.colLast")}</th>
+                    <th className="w-[230px] pb-5 font-bold">{t("patients.colStatus")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading
+                    ? [0, 1, 2, 3, 4].map((i) => (
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="py-3" colSpan={5}>
+                            <div className="h-4 w-[180px] animate-pulse rounded bg-slate-200" />
+                            <div className="mt-2 h-2.5 animate-pulse rounded bg-slate-100" />
+                          </td>
+                        </tr>
+                      ))
+                    : shown.map((p) => (
+                        <tr
+                          key={p.id}
+                          onClick={() => router.push(`/doctor/patients/${p.id}`)}
+                          className="cursor-pointer border-b border-slate-200 transition-colors hover:bg-[#f6faf8]"
+                        >
+                          <td className="py-3 pr-4">
+                            <Link
+                              href={`/doctor/patients/${p.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block truncate text-sm font-bold text-slate-900 hover:text-brand"
+                            >
+                              {p.full_name ?? p.email ?? "—"}
+                            </Link>
+                          </td>
+                          <td className="whitespace-nowrap py-3 pr-4 font-mono text-[13px] text-slate-500">
+                            PT-{shortId(p.id).toUpperCase()}
+                          </td>
+                          <td className="whitespace-nowrap py-3 pr-4 text-sm text-slate-900">
+                            {p.age != null ? t("common.ageShort", { n: p.age }) : "—"}
+                          </td>
+                          <td className="whitespace-nowrap py-3 pr-4 text-sm text-slate-500">
+                            {dayLabel(p.last_activity_at, lang, t)}
+                          </td>
+                          <td className="py-3">
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <ClinicalBadge status={p.status} withIcon />
+                              {p.pending_reviews > 0 && (
+                                <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-500">
+                                  {t("patients.toReview", { n: p.pending_reviews })}
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* pagination */}
+            {!loading && (
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-7 text-[13px]">
+                <p className="text-slate-500">
+                  {t("patients.showing", {
+                    from: (current - 1) * PAGE_SIZE + 1,
+                    to: Math.min(current * PAGE_SIZE, filtered.length),
+                    total: filtered.length,
+                  })}
+                </p>
+                {pages > 1 && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setPage(current - 1)}
+                      disabled={current === 1}
+                      aria-label={t("common.prev")}
+                      className="rounded-md border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                    >
+                      <Icon name="chevronLeft" size={16} />
+                    </button>
+                    {Array.from({ length: pages }, (_, i) => i + 1)
+                      .filter((n) => n === 1 || n === pages || Math.abs(n - current) <= 1)
+                      .map((n, i, list) => (
+                        <span key={n} className="flex items-center gap-1">
+                          {i > 0 && n - list[i - 1] > 1 && <span className="text-slate-500">...</span>}
+                          <button
+                            onClick={() => setPage(n)}
+                            aria-current={n === current ? "page" : undefined}
+                            className={`min-w-8 rounded-md px-3 py-1.5 text-[13px] ${
+                              n === current ? "bg-brand font-bold text-white" : "font-medium text-slate-500 hover:bg-slate-100"
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        </span>
+                      ))}
+                    <button
+                      onClick={() => setPage(current + 1)}
+                      disabled={current === pages}
+                      aria-label={t("common.next")}
+                      className="rounded-md border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                    >
+                      <Icon name="chevronRight" size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </section>
 
       {/* ── create patient modal ─────────────────────────────────────────── */}
       {showCreate && (

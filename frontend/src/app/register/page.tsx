@@ -4,42 +4,72 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { DropletLogo, SegmentedLangToggle } from "@/components/Brand";
+import PublicShell, { PrivacyNote, pubEyebrow, pubInput, pubLabel, pubPrimary } from "@/components/public/PublicShell";
 import { useI18n } from "@/i18n";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { Role } from "@/lib/types";
 
-const inputClass =
-  "w-full rounded-[10px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E7C66] focus:ring-2 focus:ring-[#0E7C66]/15";
+type SignupRole = "doctor" | "patient";
+
+function RoleCard({ role, selected, onSelect }: { role: SignupRole; selected: boolean; onSelect: () => void }) {
+  const { t } = useI18n();
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
+      className={`flex min-h-[72px] flex-1 items-center gap-3 rounded-xl p-4 text-left ${
+        selected ? "border-2 border-pub-primary bg-pub-mint" : "border border-pub-field bg-white hover:bg-pub-mint-soft"
+      }`}
+    >
+      <span
+        className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 bg-white ${selected ? "border-pub-primary" : "border-pub-field"}`}
+        aria-hidden
+      >
+        {selected && <span className="size-2.5 rounded-full bg-pub-primary" />}
+      </span>
+      <span className="flex flex-col gap-1">
+        <span className="text-sm font-semibold text-pub-dark">{t(`pub.reg.role.${role}`)}</span>
+        <span className="text-xs leading-[1.35] text-pub-muted">{t(`pub.reg.role.${role}Sub`)}</span>
+      </span>
+    </button>
+  );
+}
 
 function RegisterForm() {
   const { t } = useI18n();
   const router = useRouter();
   const params = useSearchParams();
-  const [role, setRole] = useState<Role>(
-    params.get("role") === "doctor" ? "doctor" : "patient"
-  );
+  const [role, setRole] = useState<SignupRole>(params.get("role") === "doctor" ? "doctor" : "patient");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [terms, setTerms] = useState(false);
+  const [license, setLicense] = useState("");
+  const [facility, setFacility] = useState("");
+  const [dob, setDob] = useState("");
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!consent) {
+      setError(t("pub.reg.needConsent"));
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { role, full_name: fullName },
-        },
-      });
+      // the database keeps these on the new profile (migration 0013); the
+      // role is limited to doctor/patient there whatever is sent
+      const data =
+        role === "doctor"
+          ? { role, full_name: fullName, phone, license_number: license.trim(), facility: facility.trim() }
+          : { role, full_name: fullName, phone, dob };
+      const { error: authError } = await supabase.auth.signUp({ email, password, options: { data } });
       if (authError) {
         setError(authError.message);
         return;
@@ -60,297 +90,167 @@ function RegisterForm() {
     }
   }
 
+  const card =
+    "flex w-full max-w-[820px] min-w-0 flex-col gap-6 rounded-[28px] border border-pub-line bg-white p-6 shadow-[0_18px_25px_rgba(6,61,48,0.13)] sm:p-9";
+
+  if (done) {
+    return (
+      <div className={card}>
+        <p className={pubEyebrow}>{t("pub.reg.eyebrow")}</p>
+        <h1 className="text-[34px] font-bold text-pub-dark">{t("pub.reg.doneTitle")}</h1>
+        <p className="rounded-xl bg-pub-mint-soft px-4 py-3 text-sm text-pub-deep">{t("auth.checkEmail")}</p>
+        <Link href="/login" className={pubPrimary}>
+          {t("pub.login")}
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto grid w-full max-w-[1240px] items-start gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-16">
-      {/* Form card */}
-      <div className="rounded-3xl bg-white p-7 shadow-[0_24px_60px_-28px_rgba(11,59,49,0.28)] sm:p-10">
-        {done ? (
-          <>
-            <h1 className="text-3xl font-bold tracking-tight text-[#113B32]">
-              {t("auth.registerTitle")}
-            </h1>
-            <p className="mt-4 rounded-lg bg-[#EAF5F0] px-4 py-3 text-sm text-[#0B4F41]">
-              {t("auth.checkEmail")}
-            </p>
-            <Link
-              href="/login"
-              className="mt-5 block w-full rounded-xl bg-[#0E7C66] px-4 py-3.5 text-center text-[15px] font-semibold text-white transition-colors hover:bg-[#0B6455]"
-            >
-              {t("common.login")}
-            </Link>
-          </>
-        ) : (
-          <>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#0E7C66]">
-              {t("auth.registerEyebrow")}
-            </p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-[#113B32]">
-              {t("auth.registerTitle")}
-            </h1>
-            <p className="mt-3 text-[15px] leading-relaxed text-slate-500">
-              {t("auth.registerSubtitle")}
-            </p>
-
-            <p className="mb-2.5 mt-7 block text-sm font-semibold text-slate-800">
-              {t("auth.asLabel")}
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(["doctor", "patient"] as Role[]).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  aria-pressed={role === r}
-                  className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
-                    role === r
-                      ? "border-[#0E7C66] bg-[#EAF5F0] ring-1 ring-[#0E7C66]"
-                      : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-                >
-                  <span
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                      role === r
-                        ? "border-[#0E7C66]"
-                        : "border-slate-300 bg-white"
-                    }`}
-                  >
-                    {role === r && (
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#0E7C66]" />
-                    )}
-                  </span>
-                  <span>
-                    <span className="block text-[15px] font-bold text-[#123B32]">
-                      {t(`auth.role${r === "doctor" ? "Doctor" : "Patient"}`)}
-                    </span>
-                    <span className="mt-0.5 block text-[13px] leading-snug text-slate-500">
-                      {t(
-                        `auth.role${r === "doctor" ? "Doctor" : "Patient"}Desc`
-                      )}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="reg-name"
-                  className="mb-1.5 block text-sm font-semibold text-slate-800"
-                >
-                  {t("common.fullName")}
-                </label>
-                <input
-                  id="reg-name"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder={t("register.namePlaceholder")}
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="reg-email"
-                  className="mb-1.5 block text-sm font-semibold text-slate-800"
-                >
-                  {t("login.emailLabel")}
-                </label>
-                <input
-                  id="reg-email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t("register.emailPlaceholder")}
-                  className={inputClass}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="reg-password"
-                  className="mb-1.5 block text-sm font-semibold text-slate-800"
-                >
-                  {t("register.passwordLabel")}
-                </label>
-                <input
-                  id="reg-password"
-                  type="password"
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t("register.passwordPlaceholder")}
-                  className={inputClass}
-                />
-              </div>
-
-              <label className="flex cursor-pointer items-start gap-2.5 sm:col-span-2">
-                <input
-                  type="checkbox"
-                  required
-                  checked={terms}
-                  onChange={(e) => setTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#0E7C66]"
-                />
-                <span className="text-[13px] leading-snug text-slate-600">
-                  {t("auth.terms")}
-                </span>
-              </label>
-
-              {error && (
-                <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 sm:col-span-2">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={busy}
-                className="w-full rounded-xl bg-[#0E7C66] px-4 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[#0B6455] disabled:opacity-50 sm:col-span-2"
-              >
-                {busy ? t("auth.working") : t("auth.registerCta")}
-              </button>
-            </form>
-          </>
-        )}
+    <form onSubmit={submit} className={card}>
+      <div className="flex flex-col gap-3">
+        <p className={pubEyebrow}>{t("pub.reg.eyebrow")}</p>
+        <h1 className="text-[34px] font-bold tracking-[-0.42px] text-pub-dark sm:text-[42px]">{t("pub.reg.title")}</h1>
+        <p className="text-base leading-[1.5] text-pub-muted">{t("pub.reg.text")}</p>
       </div>
 
-      {/* Aside */}
-      <div className="lg:pt-2">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#0E7C66]">
-          {t("auth.stepsEyebrow")}
-        </p>
-        <h2 className="mt-3 text-[2.1rem] font-bold leading-[1.15] tracking-tight text-[#113B32]">
-          {t("auth.stepsTitle")}
-        </h2>
-        <ul className="mt-7 space-y-3.5">
-          {(["step1", "step2", "step3"] as const).map((k, i) => (
-            <li
-              key={k}
-              className="flex items-center gap-3.5 rounded-xl border border-slate-200/80 bg-white px-5 py-4"
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#DFEFE8] text-[13px] font-bold text-[#0B4F41]">
-                {i + 1}
-              </span>
-              <span className="text-[15px] font-medium text-[#123B32]">
-                {t(`auth.${k}`)}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-6 flex items-start gap-3.5 rounded-2xl bg-[#EAF5F0] p-4">
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0E7C66]">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden
-            >
-              <path
-                d="M5 12.5 10 17.5 19 7"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-[#123B32]">
-              {t("auth.registerTrustTitle")}
-            </p>
-            <p className="mt-0.5 text-[13px] leading-relaxed text-slate-500">
-              {t("auth.registerTrustDesc")}
-            </p>
-          </div>
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold text-pub-ink">{t("pub.reg.as")}</p>
+        <div role="radiogroup" aria-label={t("pub.reg.as")} className="flex flex-col gap-3 sm:flex-row">
+          <RoleCard role="doctor" selected={role === "doctor"} onSelect={() => setRole("doctor")} />
+          <RoleCard role="patient" selected={role === "patient"} onSelect={() => setRole("patient")} />
         </div>
-
-        <p className="mt-6 text-sm text-slate-500">
-          {t("auth.helpLabel")}{" "}
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="font-semibold text-[#0E7C66] hover:underline"
-          >
-            {t("auth.helpLink")}
-          </a>
-        </p>
       </div>
-    </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className={pubLabel}>
+          {t("pub.reg.fullName")}
+          <input required maxLength={120} autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t("pub.reg.fullNamePh")} className={pubInput} />
+        </label>
+        <label className={pubLabel}>
+          {t("pub.email")}
+          <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.dz" className={pubInput} />
+        </label>
+        <label className={pubLabel}>
+          {t("pub.reg.phone")}
+          <input type="tel" maxLength={30} autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+213 5 00 00 00 00" className={pubInput} />
+        </label>
+        <label className={pubLabel}>
+          {t("pub.reg.password")}
+          <input
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t("pub.reg.passwordPh")}
+            className={pubInput}
+          />
+        </label>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold text-pub-ink">{t("pub.reg.specific")}</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <fieldset
+            disabled={role !== "doctor"}
+            className={`flex flex-col gap-3 rounded-xl p-4 ${role === "doctor" ? "border border-pub-primary bg-pub-mint-soft" : "border border-pub-line bg-pub-bg opacity-60"}`}
+          >
+            <legend className="sr-only">{t("pub.reg.forDoctors")}</legend>
+            <div className="flex flex-col gap-1">
+              <p className={`text-sm font-bold ${role === "doctor" ? "text-pub-deep" : "text-pub-ink"}`}>{t("pub.reg.forDoctors")}</p>
+              <p className="text-xs text-pub-muted">{t("pub.reg.forDoctorsSub")}</p>
+            </div>
+            <label className={pubLabel}>
+              {t("pub.reg.license")}
+              <input required={role === "doctor"} maxLength={64} value={license} onChange={(e) => setLicense(e.target.value)} placeholder={t("pub.reg.licensePh")} className={pubInput} />
+            </label>
+            <label className={pubLabel}>
+              {t("pub.reg.facility")}
+              <input required={role === "doctor"} maxLength={120} value={facility} onChange={(e) => setFacility(e.target.value)} placeholder={t("pub.reg.facilityPh")} className={pubInput} />
+            </label>
+          </fieldset>
+          <fieldset
+            disabled={role !== "patient"}
+            className={`flex flex-col gap-3 rounded-xl p-4 ${role === "patient" ? "border border-pub-primary bg-pub-mint-soft" : "border border-pub-line bg-pub-bg opacity-60"}`}
+          >
+            <legend className="sr-only">{t("pub.reg.forPatients")}</legend>
+            <div className="flex flex-col gap-1">
+              <p className={`text-sm font-bold ${role === "patient" ? "text-pub-deep" : "text-pub-ink"}`}>{t("pub.reg.forPatients")}</p>
+              <p className="text-xs text-pub-muted">{t("pub.reg.forPatientsSub")}</p>
+            </div>
+            <label className={pubLabel}>
+              {t("pub.reg.dob")}
+              <input
+                type="date"
+                required={role === "patient"}
+                max={new Date().toISOString().slice(0, 10)}
+                min="1900-01-01"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                className={pubInput}
+              />
+            </label>
+            <p className="text-xs leading-[1.45] text-pub-muted">{t("pub.reg.patientNote")}</p>
+          </fieldset>
+        </div>
+      </div>
+
+      <label className="flex items-start gap-3 text-sm leading-[1.45] text-pub-muted">
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          className="mt-0.5 size-[18px] shrink-0 rounded border-pub-field accent-pub-primary"
+        />
+        <span>
+          {t("pub.reg.consent")}{" "}
+          <Link href="/#privacy" className="font-semibold text-pub-primary hover:underline">
+            {t("pub.reg.consentLink")}
+          </Link>
+        </span>
+      </label>
+
+      {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
+      <button type="submit" disabled={busy} className={pubPrimary}>
+        {busy ? t("auth.working") : t("pub.reg.submit")}
+      </button>
+    </form>
   );
 }
 
+/** Figma "Page new" · Register EN (43:195). */
 export default function RegisterPage() {
   const { t } = useI18n();
   return (
-    <div className="flex min-h-screen flex-col bg-[#F4F8F6]">
-      {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-slate-200/80 bg-white px-6 py-5 lg:px-10">
-        <Link href="/" className="flex items-center gap-2.5">
-          <DropletLogo />
-          <span className="text-[22px] font-bold tracking-tight text-slate-900">
-            DiabAI
-          </span>
-        </Link>
-        <div className="flex items-center gap-3">
-          <SegmentedLangToggle />
-          <Link
-            href="/login"
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-300 hover:bg-slate-50"
-          >
-            {t("common.login")}
-          </Link>
-        </div>
-      </header>
-
-      {/* Body */}
-      <main className="flex flex-1 items-center px-6 py-10 lg:px-10">
-        <Suspense
-          fallback={
-            <p className="w-full text-center text-sm text-slate-500">
-              {t("common.loading")}
-            </p>
-          }
-        >
+    <PublicShell action={{ href: "/login", label: t("pub.login") }}>
+      <div className="flex flex-col gap-12 px-4 py-10 sm:px-12 lg:flex-row lg:items-start lg:px-20 lg:py-12">
+        <Suspense fallback={<p className="text-sm text-pub-muted">{t("common.loading")}</p>}>
           <RegisterForm />
         </Suspense>
-      </main>
-
-      {/* Footer band — pinned to the bottom of the page */}
-      <footer className="flex flex-col items-center justify-between gap-3 bg-[#0B3B31] px-6 py-[28px] text-sm text-white/80 sm:flex-row lg:px-10">
-        <div className="flex items-center gap-3">
-          <span className="h-5 w-1.5 rounded-full bg-[#2FBF8F]" />
-          <span>{t("login.footerTag")}</span>
-        </div>
-        <div className="flex items-center gap-8">
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="transition-colors hover:text-white"
-          >
-            {t("login.privacy")}
-          </a>
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="transition-colors hover:text-white"
-          >
-            {t("landing.bandTerms")}
-          </a>
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="transition-colors hover:text-white"
-          >
-            {t("login.support")}
-          </a>
-        </div>
-      </footer>
-    </div>
+        <aside className="flex min-w-0 flex-1 flex-col gap-8 lg:pt-6">
+          <div className="flex flex-col gap-4">
+            <p className="text-xs font-bold uppercase tracking-[1.2px] text-pub-accent">{t("pub.reg.ctxEyebrow")}</p>
+            <h2 className="text-3xl font-bold leading-[1.15] tracking-[-0.4px] text-pub-dark sm:text-[40px]">{t("pub.reg.ctxTitle")}</h2>
+          </div>
+          <ol className="flex flex-col gap-3">
+            {(["one", "two", "three"] as const).map((k, i) => (
+              <li key={k} className="flex items-center gap-3 rounded-xl border border-pub-line bg-white p-4">
+                <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-pub-mint text-sm font-bold text-pub-deep">{i + 1}</span>
+                <span className="text-sm font-medium leading-[1.4] text-pub-ink">{t(`pub.reg.step.${k}`)}</span>
+              </li>
+            ))}
+          </ol>
+          <PrivacyNote title={t("pub.reg.privacyTitle")} text={t("pub.reg.privacyText")} />
+          <p className="flex flex-wrap gap-2 text-sm">
+            <span className="text-pub-muted">{t("pub.reg.haveAccount")}</span>
+            <Link href="/login" className="font-semibold text-pub-primary hover:underline">
+              {t("pub.login")}
+            </Link>
+          </p>
+        </aside>
+      </div>
+    </PublicShell>
   );
 }

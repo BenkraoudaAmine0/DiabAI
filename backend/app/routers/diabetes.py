@@ -24,6 +24,7 @@ from app.schemas import (
 from app.services import diabetes_service, interpretation_service, report_service
 from app.services.gemini_service import GeminiNotConfigured
 from app.services.notification_service import notify
+from app.services.audit_service import audit_by
 from app.services.panel import ensure_panel_link, has_panel_link
 from app.services.supabase_client import get_service_client, signed_url
 
@@ -85,6 +86,7 @@ def predict_diabetes(
             status_code=502, detail=f"Failed to save the prediction: {exc}"
         ) from exc
 
+    audit_by(user, "prediction.create", "profile", str(req.patient_id), {"prediction_id": str(record_id)})
     return PredictionResult(
         record_id=record_id,
         probability=result["probability"],
@@ -208,6 +210,8 @@ def review_prediction(
             link=f"/predictions/{prediction_id}",
             actor_id=user.id,
         )
+    audit_by(user, "prediction.review", "profile", before["patient_id"],
+             {"prediction_id": str(prediction_id), "decision": req.decision})
     return _report(_load(prediction_id, user), user)
 
 

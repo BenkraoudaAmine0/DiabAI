@@ -1,6 +1,6 @@
 """Request / response models."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -101,11 +101,42 @@ class PatientCredentialsRequest(BaseModel):
     method: Literal["login_link", "temp_password"]
 
 
+class NextVisitRequest(BaseModel):
+    next_visit_at: Optional[datetime] = None  # None clears the visit
+
+
+BloodGroup = Literal["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"]
+
+
+class IdentifiersRequest(BaseModel):
+    cnas_number: Optional[str] = Field(default=None, max_length=32)
+    chifa_number: Optional[str] = Field(default=None, max_length=32)
+    blood_group: Optional[BloodGroup] = None
+
+
+class VitalsRequest(BaseModel):
+    measured_at: Optional[datetime] = None
+    systolic: Optional[int] = Field(default=None, ge=50, le=300)
+    diastolic: Optional[int] = Field(default=None, ge=30, le=200)
+    weight_kg: Optional[float] = Field(default=None, ge=1, le=500)
+    height_cm: Optional[float] = Field(default=None, ge=30, le=260)
+    fasting_glucose: Optional[float] = Field(default=None, ge=20, le=1000)
+    hba1c: Optional[float] = Field(default=None, ge=2, le=25)
+    egfr: Optional[float] = Field(default=None, ge=1, le=200)
+    acr: Optional[float] = Field(default=None, ge=0, le=10000)
+
+
+class NoteRequest(BaseModel):
+    body: str = Field(min_length=1, max_length=5000)
+
+
 # ── chat ─────────────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     session_id: Optional[UUID] = None
     lang: Optional[Lang] = None  # UI language, for fixed replies
+    friendly: Optional[bool] = None  # patient "Friendly explanations" setting
+    patient_id: Optional[UUID] = None  # clinician chat "tuned to a record"
 
 
 class ChatSource(BaseModel):
@@ -122,3 +153,9 @@ class ChatResponse(BaseModel):
     session_id: UUID
     answer: str
     sources: list[ChatSource] = []
+
+
+class ScanReviewRequest(BaseModel):
+    decision: Literal["confirmed", "modified"]
+    label: Optional[str] = Field(default=None, max_length=64)  # the grade kept
+    referred: bool = False

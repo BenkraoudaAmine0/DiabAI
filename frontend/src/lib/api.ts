@@ -22,12 +22,38 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
     try {
       const body = await res.json();
       if (typeof body?.detail === "string") detail = body.detail;
+      // FastAPI validation errors: [{loc, msg, type}, …]
+      else if (Array.isArray(body?.detail)) {
+        const msgs = body.detail
+          .map((d: { msg?: string; loc?: unknown[] }) => {
+            const field = Array.isArray(d?.loc) ? d.loc[d.loc.length - 1] : null;
+            return d?.msg ? (typeof field === "string" ? `${field}: ${d.msg}` : d.msg) : null;
+          })
+          .filter(Boolean);
+        if (msgs.length) detail = msgs.join(" · ");
+      }
     } catch {
       /* keep status text */
     }
+    redirectForTwoFactor(res.status, detail);
     throw new Error(detail);
   }
   return res;
+}
+
+/** The backend refuses a session that still needs its 2FA code (401), or a
+ *  doctor/admin without 2FA when the admin policy requires it (403): send
+ *  the user to the step that unblocks them. */
+function redirectForTwoFactor(status: number, detail: string): void {
+  if (typeof window === "undefined") return;
+  const { pathname, search } = window.location;
+  if (status === 401 && detail === "Two-factor verification required" && pathname !== "/login") {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- not a component (no router here); a full load also resets page state
+    window.location.assign(`/login?mfa=1&next=${encodeURIComponent(pathname + search)}`);
+  } else if (status === 403 && detail === "mfa_setup_required" && pathname !== "/doctor/settings") {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- not a component (no router here); a full load also resets page state
+    window.location.assign("/doctor/settings?tab=security&mfa=required");
+  }
 }
 
 /** Fetch wrapper for the FastAPI backend — attaches the Supabase token. */
