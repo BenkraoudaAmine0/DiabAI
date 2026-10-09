@@ -11,7 +11,7 @@ Lang = Literal["en", "fr"]
 # Raw categories accepted from the form, mapped to the model's encoding:
 #   never | No Info -> non-smoker ; current -> current ; ever|former|not current -> past_smoker
 Smoking = Literal[
-    "never", "No Info", "current", "former", "ever", "not current"
+    "never", "No Info", "current", "former", "ever", "not current", "non-smoker", "past_smoker"
 ]
 
 

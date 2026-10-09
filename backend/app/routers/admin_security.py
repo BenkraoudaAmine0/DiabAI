@@ -239,11 +239,11 @@ def alerts(
         rows = query.execute().data or []
         month = (
             svc.table("app_errors").select("level, status, created_at, resolved_at")
-            .gte("created_at", _since("30d")).limit(5000).execute().data or []
+            .gte("created_at", _since("30d")).limit(1000).execute().data or []
         )
         unresolved = (
             svc.table("app_errors").select("level, status").neq("status", "resolved")
-            .limit(5000).execute().data or []
+            .limit(1000).execute().data or []
         )
     except Exception as exc:
         if _missing_0013(exc):

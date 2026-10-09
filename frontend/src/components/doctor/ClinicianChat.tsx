@@ -15,13 +15,32 @@ interface ChatResponse {
   sources: ChatSource[];
 }
 
+function cleanLatex(raw: string): string {
+  return raw
+    .replace(/\$(?:\\ge|\\geq)\$|\\(?:ge|geq)\b/g, "≥")
+    .replace(/\$(?:\\le|\\leq)\$|\\(?:le|leq)\b/g, "≤")
+    .replace(/\$\\beta\$|\\beta\b/g, "β")
+    .replace(/\$\\alpha\$|\\alpha\b/g, "α")
+    .replace(/\$\\gamma\$|\\gamma\b/g, "γ")
+    .replace(/\$\\delta\$|\\delta\b/g, "δ")
+    .replace(/\$\\pm\$|\\pm\b/g, "±")
+    .replace(/\$\\times\$|\\times\b/g, "×")
+    .replace(/\$\\approx\$|\\approx\b/g, "≈")
+    .replace(/\$\\neq\$|\\neq\b/g, "≠")
+    .replace(/\$\\mu\$|\\mu\b/g, "µ")
+    .replace(/\$(?:\\rightarrow|\\to)\$|\\(?:rightarrow|to)\b/g, "→")
+    .replace(/\$\\leftarrow\$|\\leftarrow\b/g, "←")
+    .replace(/\$([0-9a-zA-Z\s.,/%+-]+)\$/g, "$1");
+}
+
 /** Renders [1]-style citations as numbered chips that select the source
  *  in the right-hand panel. */
 function AnswerWithCitations({ text, onCite }: { text: string; onCite: (n: number) => void }) {
   const { t } = useI18n();
+  const cleaned = cleanLatex(text);
   return (
     <p className="whitespace-pre-wrap leading-relaxed">
-      {text.split(/(\[\d+\])/g).map((part, i) => {
+      {cleaned.split(/(\[\d+\])/g).map((part, i) => {
         const m = part.match(/^\[(\d+)\]$/);
         if (!m) return <span key={i}>{part}</span>;
         return (
@@ -37,6 +56,63 @@ function AnswerWithCitations({ text, onCite }: { text: string; onCite: (n: numbe
         );
       })}
     </p>
+  );
+}
+
+function TypewriterAnswer({
+  text,
+  animate,
+  onCite,
+  onDone,
+  onScroll,
+}: {
+  text: string;
+  animate: boolean;
+  onCite: (n: number) => void;
+  onDone?: () => void;
+  onScroll?: () => void;
+}) {
+  const [displayedLength, setDisplayedLength] = useState(animate ? 0 : text.length);
+
+  useEffect(() => {
+    if (!animate) {
+      setDisplayedLength(text.length);
+      return;
+    }
+
+    setDisplayedLength(0);
+    let current = 0;
+    let ticks = 0;
+    const step = Math.max(1, Math.ceil(text.length / 90));
+    const interval = setInterval(() => {
+      current += step;
+      ticks++;
+      if (current >= text.length) {
+        setDisplayedLength(text.length);
+        clearInterval(interval);
+        onDone?.();
+        onScroll?.();
+      } else {
+        setDisplayedLength(current);
+        if (ticks % 3 === 0) {
+          onScroll?.();
+        }
+      }
+    }, 20);
+
+    return () => clearInterval(interval);
+  }, [text, animate]);
+
+  const displayedText = text.slice(0, displayedLength);
+  const isTyping = animate && displayedLength < text.length;
+
+  return (
+    <>
+      <AnswerWithCitations text={displayedText} onCite={onCite} />
+      {isTyping && (
+        <span className="ml-1 inline-block size-1.5 animate-pulse rounded-full bg-brand align-middle" />
+      )}
+    </>
   );
 }
 
@@ -78,6 +154,7 @@ export default function ClinicianChat() {
   const [cited, setCited] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [typingIndex, setTypingIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +185,7 @@ export default function ClinicianChat() {
     setShown(null);
     setCited(null);
     setError(null);
+    setTypingIndex(null);
   }
 
   async function send(e: React.FormEvent) {
@@ -126,10 +204,14 @@ export default function ClinicianChat() {
         body: JSON.stringify({ message, session_id: sessionId, lang, patient_id: patientId || null }),
       });
       setSessionId(res.session_id);
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: res.answer, sources: res.sources, created_at: new Date().toISOString() },
-      ]);
+      setMessages((m) => {
+        const next = [
+          ...m,
+          { role: "assistant" as const, content: res.answer, sources: res.sources, created_at: new Date().toISOString() },
+        ];
+        setTypingIndex(next.length - 1);
+        return next;
+      });
     } catch (e2) {
       setError(e2 instanceof Error ? e2.message : t("common.error"));
     } finally {
@@ -198,7 +280,13 @@ export default function ClinicianChat() {
                   <div
                     className={`max-w-[90%] rounded-2xl rounded-bl-md border px-4 py-3 text-sm text-slate-800 ${i === sourcesOf ? "border-brand/30 bg-[#f3faf6]" : "border-slate-200 bg-slate-50"}`}
                   >
-                    <AnswerWithCitations text={m.content} onCite={(n) => cite(i, n)} />
+                    <TypewriterAnswer
+                      text={m.content}
+                      animate={typingIndex === i}
+                      onCite={(n) => cite(i, n)}
+                      onDone={() => setTypingIndex(null)}
+                      onScroll={() => bottomRef.current?.scrollIntoView({ behavior: "auto" })}
+                    />
                   </div>
                   {m.sources && m.sources.length > 0 && i !== sourcesOf && (
                     <button type="button" onClick={() => setShown(i)} className="px-1 text-xs font-semibold text-brand hover:underline">

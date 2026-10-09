@@ -15,11 +15,30 @@ interface ChatResponse {
   sources: ChatSource[];
 }
 
+function cleanLatex(raw: string): string {
+  return raw
+    .replace(/\$(?:\\ge|\\geq)\$|\\(?:ge|geq)\b/g, "≥")
+    .replace(/\$(?:\\le|\\leq)\$|\\(?:le|leq)\b/g, "≤")
+    .replace(/\$\\beta\$|\\beta\b/g, "β")
+    .replace(/\$\\alpha\$|\\alpha\b/g, "α")
+    .replace(/\$\\gamma\$|\\gamma\b/g, "γ")
+    .replace(/\$\\delta\$|\\delta\b/g, "δ")
+    .replace(/\$\\pm\$|\\pm\b/g, "±")
+    .replace(/\$\\times\$|\\times\b/g, "×")
+    .replace(/\$\\approx\$|\\approx\b/g, "≈")
+    .replace(/\$\\neq\$|\\neq\b/g, "≠")
+    .replace(/\$\\mu\$|\\mu\b/g, "µ")
+    .replace(/\$(?:\\rightarrow|\\to)\$|\\(?:rightarrow|to)\b/g, "→")
+    .replace(/\$\\leftarrow\$|\\leftarrow\b/g, "←")
+    .replace(/\$([0-9a-zA-Z\s.,/%+-]+)\$/g, "$1");
+}
+
 /** [1]-style citations as small chips (Figma chat palette). */
 function Cited({ text }: { text: string }) {
+  const cleaned = cleanLatex(text);
   return (
     <p className="whitespace-pre-wrap text-[15px] leading-[22px] text-[#17352d]">
-      {text.split(/(\[\d+\])/g).map((part, i) => {
+      {cleaned.split(/(\[\d+\])/g).map((part, i) => {
         const m = part.match(/^\[(\d+)\]$/);
         return m ? (
           <a
@@ -37,6 +56,59 @@ function Cited({ text }: { text: string }) {
   );
 }
 
+function TypewriterCited({
+  text,
+  animate,
+  onDone,
+  onScroll,
+}: {
+  text: string;
+  animate: boolean;
+  onDone?: () => void;
+  onScroll?: () => void;
+}) {
+  const [displayedLength, setDisplayedLength] = useState(animate ? 0 : text.length);
+
+  useEffect(() => {
+    if (!animate) {
+      setDisplayedLength(text.length);
+      return;
+    }
+
+    setDisplayedLength(0);
+    let current = 0;
+    let ticks = 0;
+    const step = Math.max(1, Math.ceil(text.length / 90));
+    const interval = setInterval(() => {
+      current += step;
+      ticks++;
+      if (current >= text.length) {
+        setDisplayedLength(text.length);
+        clearInterval(interval);
+        onDone?.();
+        onScroll?.();
+      } else {
+        setDisplayedLength(current);
+        if (ticks % 3 === 0) onScroll?.();
+      }
+    }, 20);
+
+    return () => clearInterval(interval);
+  }, [text, animate]);
+
+  const displayedText = text.slice(0, displayedLength);
+  const isTyping = animate && displayedLength < text.length;
+
+  return (
+    <>
+      <Cited text={displayedText} />
+      {isTyping && (
+        <span className="ml-1 inline-block size-1.5 animate-pulse rounded-full bg-[#1d8a63] align-middle" />
+      )}
+    </>
+  );
+}
+
 /** Figma 06 Patient Screens · AI Chat (122:16804). Same /api/chat as the
  *  clinician chat, plus the Settings "Friendly explanations" flag. */
 export default function PatientChat() {
@@ -45,6 +117,7 @@ export default function PatientChat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [typingIndex, setTypingIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [consultOpen, setConsultOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -67,10 +140,14 @@ export default function PatientChat() {
         body: JSON.stringify({ message, session_id: sessionId, lang, friendly: readFriendly() }),
       });
       setSessionId(res.session_id);
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: res.answer, sources: res.sources, created_at: new Date().toISOString() },
-      ]);
+      setMessages((m) => {
+        const next = [
+          ...m,
+          { role: "assistant" as const, content: res.answer, sources: res.sources, created_at: new Date().toISOString() },
+        ];
+        setTypingIndex(next.length - 1);
+        return next;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -120,7 +197,12 @@ export default function PatientChat() {
                 {/* eslint-disable-next-line @next/next/no-img-element -- Figma assistant mark */}
                 <img src="/brand/assistant-mark.svg" alt="" className="size-10 shrink-0" />
                 <div className="flex min-w-0 flex-1 flex-col gap-4 rounded-2xl border border-[#dde9e4] bg-white p-6 shadow-[0_4px_7px_rgba(21,63,48,0.06)]">
-                  <Cited text={m.content} />
+                  <TypewriterCited
+                    text={m.content}
+                    animate={typingIndex === i}
+                    onDone={() => setTypingIndex(null)}
+                    onScroll={() => bottomRef.current?.scrollIntoView({ behavior: "auto" })}
+                  />
                   <button
                     type="button"
                     onClick={() => setConsultOpen(true)}

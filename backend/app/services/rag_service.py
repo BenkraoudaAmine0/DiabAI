@@ -56,10 +56,38 @@ SYSTEM_PROMPT = (
     "source document.\n"
     "3. If the context does not contain the answer, say plainly that you "
     "don't have that information in your knowledge base.\n"
-    "4. You provide general information, not a diagnosis. When appropriate, "
-    "encourage the user to consult a healthcare professional.\n"
-    "5. Reply in the same language as the question (English or French)."
+    "4. You provide general information, not a diagnosis. When appropriate for patients, "
+    "remind them to consult their doctor.\n"
+    "5. Reply in the same language as the question (English or French).\n"
+    "6. Do NOT use LaTeX math formatting (such as $\\ge$, $\\le$, $\\beta$). Use standard characters like ≥, ≤, β."
 )
+
+LATEX_REPLACEMENTS = [
+    (r"\$(?:\\ge|\\geq)\$|\\(?:ge|geq)\b", "≥"),
+    (r"\$(?:\\le|\\leq)\$|\\(?:le|leq)\b", "≤"),
+    (r"\$\\beta\$|\\beta\b", "β"),
+    (r"\$\\alpha\$|\\alpha\b", "α"),
+    (r"\$\\gamma\$|\\gamma\b", "γ"),
+    (r"\$\\delta\$|\\delta\b", "δ"),
+    (r"\$\\pm\$|\\pm\b", "±"),
+    (r"\$\\times\$|\\times\b", "×"),
+    (r"\$\\approx\$|\\approx\b", "≈"),
+    (r"\$\\neq\$|\\neq\b", "≠"),
+    (r"\$\\mu\$|\\mu\b", "µ"),
+    (r"\$(?:\\rightarrow|\\to)\$|\\(?:rightarrow|to)\b", "→"),
+    (r"\$\\leftarrow\$|\\leftarrow\b", "←"),
+]
+
+
+def clean_latex(text: str) -> str:
+    """Replaces common LaTeX math symbols with clean plain unicode characters."""
+    out = text
+    for pattern, repl in LATEX_REPLACEMENTS:
+        out = re.sub(pattern, repl, out)
+    # Remove single dollar signs wrapping plain terms/numbers like $7.0$ -> 7.0
+    out = re.sub(r"\$([0-9a-zA-Z\s.,/%+-]+)\$", r"\1", out)
+    return out
+
 
 CONDENSE_PROMPT = (
     "You rewrite follow-up questions for a diabetes knowledge-base search. "
@@ -252,7 +280,7 @@ def _generate(state: RagState, config: RunnableConfig) -> RagState:
         raise RuntimeError(
             f"Gemini ({get_settings().gemini_model}) returned an empty response"
         )
-    return {"answer": text, "sources": sources}
+    return {"answer": clean_latex(text), "sources": sources}
 
 
 @lru_cache

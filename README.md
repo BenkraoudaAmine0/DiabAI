@@ -18,8 +18,8 @@ LangGraph RAG) · Supabase only — Auth (email/password), Postgres + pgvector
 (all data), Storage (scan images, SHAP explanations, knowledge base) · Gemini
 as the single LLM (`gemini-3.5-flash-lite`), no fallback model.
 
-**Docs:** [roles & permissions (admin, doctor, patient)](docs/ROLES.md) ·
-[RAG architecture, verification & code review](docs/RAG_ARCHITECTURE.md)
+**Docs:** [roles &amp; permissions (admin, doctor, patient)](docs/ROLES.md) ·
+[RAG architecture, verification &amp; code review](docs/RAG_ARCHITECTURE.md)
 
 ---
 
@@ -78,20 +78,21 @@ DiabAI/
    in order, with `0002_admin.sql` … `0009_embedding_model.sql`.
    All nine are required:
 
-   | Migration | Adds |
-   | --------- | ---- |
-   | 0001 | tables, RLS policies, `match_kb_chunks`, `scans` / `kb-docs` buckets |
-   | 0002 | `gemini_usage` (admin usage & cost view) |
-   | 0003 | HNSW vector index |
-   | 0004 | `notifications` table + Realtime publication for the in-app bell |
-   | 0005 | knowledge-base upload status, file info, page / chapter citations, `match_kb_chunks_v2` |
-   | 0006 | knowledge-base extraction stats (tables, images read, scanned pages) |
-   | 0007 | prediction review (pending / confirmed / rejected) + clinical interpretation; patients only read confirmed predictions |
-   | 0008 | **security:** nobody can sign up as admin or change their own role / email; creates missing profiles |
-   | 0009 | records which embedding model indexed each document; search only uses documents of the current model |
+   | Migration | Adds                                                                                                                   |
+   | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+   | 0001      | tables, RLS policies,`match_kb_chunks`, `scans` / `kb-docs` buckets                                              |
+   | 0002      | `gemini_usage` (admin usage & cost view)                                                                             |
+   | 0003      | HNSW vector index                                                                                                      |
+   | 0004      | `notifications` table + Realtime publication for the in-app bell                                                     |
+   | 0005      | knowledge-base upload status, file info, page / chapter citations,`match_kb_chunks_v2`                               |
+   | 0006      | knowledge-base extraction stats (tables, images read, scanned pages)                                                   |
+   | 0007      | prediction review (pending / confirmed / rejected) + clinical interpretation; patients only read confirmed predictions |
+   | 0008      | **security:** nobody can sign up as admin or change their own role / email; creates missing profiles             |
+   | 0009      | records which embedding model indexed each document; search only uses documents of the current model                   |
 3. Project Settings → API: copy the **Project URL**, the **anon public key**
    and the **service_role key**.
 4. Authentication → **URL Configuration**:
+
    - **Site URL**: your frontend, e.g. `http://localhost:3000`
    - **Redirect URLs**: add `http://localhost:3000/**` (and your production
      URL + `/**`) — it covers `/auth/callback` and `/set-password`, where
@@ -157,12 +158,12 @@ scanned pages, read by Gemini — at most `KB_MAX_VISION_CALLS` per file) →
 
 **Embedding model** (`EMBEDDING_PROVIDER` in `backend/.env`):
 
-| | `local` (default) | `gemini` |
-| --- | --- | --- |
-| Model | `google/embeddinggemma-300m`, on the server (fastembed / ONNX) | `gemini-embedding-001` (API) |
-| Cost / limits | free, no limits | free tier ≈ 1 000 requests/day, 30 k tokens/min |
-| 1 100-page book (≈ 4 000 chunks) | ≈ 15 min on a laptop CPU | can take days on the free tier; ≈ $0.10 paid |
-| Needs | ~1.2 GB download once (`models_app/embeddings/`), ~1.5 GB RAM | `GEMINI_API_KEY` |
+|                                   | `local` (default)                                              | `gemini`                                       |
+| --------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
+| Model                             | `google/embeddinggemma-300m`, on the server (fastembed / ONNX) | `gemini-embedding-001` (API)                   |
+| Cost / limits                     | free, no limits                                                  | free tier ≈ 1 000 requests/day, 30 k tokens/min |
+| 1 100-page book (≈ 4 000 chunks) | ≈ 15 min on a laptop CPU                                        | can take days on the free tier; ≈ $0.10 paid    |
+| Needs                             | ~1.2 GB download once (`models_app/embeddings/`), ~1.5 GB RAM  | `GEMINI_API_KEY`                               |
 
 Questions and documents must be embedded by the **same** model, so each
 document remembers its model (migration 0009) and the chatbot only searches
@@ -276,8 +277,7 @@ shown as source chips with chapter, page and a *table* / *figure* tag) — or
 `KB_MIN_SIMILARITY` in `backend/.env` drops weak matches — it defaults to
 `0` (always top 5); try ~`0.5` once you have real questions to tune it on.
 Each step is a LangChain component: `DiabAIVectorStore` (a
-`SupabaseVectorStore` adapter), LCEL chains (`prompt | llm |
-StrOutputParser()`), token usage logged per call. A conversation keeps its
+`SupabaseVectorStore` adapter), LCEL chains (`prompt | llm | StrOutputParser()`), token usage logged per call. A conversation keeps its
 session, so the bot remembers the last exchanges; *New conversation* starts
 over. It answers in English or French (matching the question) and never
 diagnoses. Architecture, tests and review:
@@ -370,20 +370,20 @@ email's set-password page) → **My history** shows the confirmed diagnostic.
 
 ## Troubleshooting
 
-| Symptom                        | Fix                                                                                 |
-| ------------------------------ | ----------------------------------------------------------------------------------- |
-| `Supabase is not configured` | Fill`backend/.env` (and `frontend/.env.local`)                                  |
-| 401 from API                   | Frontend env missing or token expired — re-login                                   |
-| 403 Doctor access only         | Signed in as patient; use a doctor account                                          |
-| 503 model not installed        | Add`model.<ext>` to `backend/models_app/<scan>/`                                |
-| Chat finds nothing in the KB   | Upload documents from the admin dashboard, or run`python scripts/ingest_kb.py`   |
-| KB upload/list fails, `column … does not exist` | Apply migrations `0005_kb_uploads.sql` and `0006_kb_rich_content.sql` |
-| Report page: "Prediction review isn't set up" | Apply `0007_prediction_review.sql`                                          |
-| Invite email not arriving      | Supabase free SMTP is rate-limited; use the temp-password method or set custom SMTP |
-| Invite link opens the home page / "This link can't be used" | Add `FRONTEND_URL/**` to Auth → URL Configuration → Redirect URLs; links expire after 24 h and work once — patient can use *Forgot password?* |
-| A patient doesn't see a prediction | It is still *pending*: confirm it on the report page                                |
-| PDF uploaded, "images skipped"  | Raise `KB_MAX_VISION_CALLS` in `backend/.env`, then *Re-index*                     |
-| Document shows "Not searched: embedded by another model" | It was indexed with the other `EMBEDDING_PROVIDER` — *Re-index* it |
-| Chat: "knowledge-base search function is missing" | Apply `0009_embedding_model.sql` |
-| API log: "local model unavailable" | `python -m pip install -r requirements.txt` (fastembed); the first start needs internet to download the model |
-| Windows: `DLL load failed … stratégie de contrôle d'application` | Smart App Control blocked a native module of a freshly installed package; retry, or use a version with wider distribution (e.g. `numba<0.64`, `scikit-learn==1.8.0`) |
+| Symptom                                                              | Fix                                                                                                                                                                     |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Supabase is not configured`                                       | Fill`backend/.env` (and `frontend/.env.local`)                                                                                                                      |
+| 401 from API                                                         | Frontend env missing or token expired — re-login                                                                                                                       |
+| 403 Doctor access only                                               | Signed in as patient; use a doctor account                                                                                                                              |
+| 503 model not installed                                              | Add`model.<ext>` to `backend/models_app/<scan>/`                                                                                                                    |
+| Chat finds nothing in the KB                                         | Upload documents from the admin dashboard, or run`python scripts/ingest_kb.py`                                                                                        |
+| KB upload/list fails,`column … does not exist`                    | Apply migrations`0005_kb_uploads.sql` and `0006_kb_rich_content.sql`                                                                                                |
+| Report page: "Prediction review isn't set up"                        | Apply`0007_prediction_review.sql`                                                                                                                                     |
+| Invite email not arriving                                            | Supabase free SMTP is rate-limited; use the temp-password method or set custom SMTP                                                                                     |
+| Invite link opens the home page / "This link can't be used"          | Add`FRONTEND_URL/**` to Auth → URL Configuration → Redirect URLs; links expire after 24 h and work once — patient can use *Forgot password?*                     |
+| A patient doesn't see a prediction                                   | It is still*pending*: confirm it on the report page                                                                                                                   |
+| PDF uploaded, "images skipped"                                       | Raise`KB_MAX_VISION_CALLS` in `backend/.env`, then *Re-index*                                                                                                     |
+| Document shows "Not searched: embedded by another model"             | It was indexed with the other`EMBEDDING_PROVIDER` — *Re-index* it                                                                                                  |
+| Chat: "knowledge-base search function is missing"                    | Apply`0009_embedding_model.sql`                                                                                                                                       |
+| API log: "local model unavailable"                                   | `python -m pip install -r requirements.txt` (fastembed); the first start needs internet to download the model                                                         |
+| Windows:`DLL load failed … stratégie de contrôle d'application` | Smart App Control blocked a native module of a freshly installed package; retry, or use a version with wider distribution (e.g.`numba<0.64`, `scikit-learn==1.8.0`) |

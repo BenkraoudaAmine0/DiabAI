@@ -61,9 +61,12 @@ GENDER_MAP = {"female": 0, "male": 1}
 SMOKING_MAP = {
     "never": 1,        # non-smoker
     "no info": 1,      # non-smoker
+    "non-smoker": 1,   # non-smoker
+    "non_smoker": 1,   # non-smoker
     "current": 0,      # current
     "ever": 2,         # past_smoker
     "former": 2,       # past_smoker
+    "past_smoker": 2,  # past_smoker
     "not current": 2,  # past_smoker
 }
 

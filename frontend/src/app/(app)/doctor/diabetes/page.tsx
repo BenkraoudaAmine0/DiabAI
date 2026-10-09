@@ -229,7 +229,11 @@ function DiabetesForm() {
           hba1c: String(input.HbA1c_level),
           heartDisease: input.heart_disease,
           knownHypertension: input.hypertension,
-          smoking: FORMER_SMOKER.includes(input.smoking_history) ? "former" : input.smoking_history,
+          smoking: FORMER_SMOKER.includes(input.smoking_history)
+            ? "former"
+            : input.smoking_history === "No Info"
+            ? "never"
+            : input.smoking_history,
         });
       })
       .catch((e) => setError(e instanceof Error ? e.message : t("common.error")));
@@ -498,7 +502,6 @@ function DiabetesForm() {
                   <option value="never">{t("m1.smoke.never")}</option>
                   <option value="former">{t("m1.smoke.former")}</option>
                   <option value="current">{t("m1.smoke.current")}</option>
-                  <option value="No Info">{t("m1.smoke.unknown")}</option>
                 </select>
               </label>
             </div>
