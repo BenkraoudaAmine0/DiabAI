@@ -15,20 +15,14 @@ Replicates models/test_model.ipynb EXACTLY:
     (top 3 shown first), waterfall PNG labelled with the entered values
 """
 
-import io
-import threading
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
 import joblib
-import matplotlib
 import numpy as np
 import pandas as pd
-
-matplotlib.use("Agg")  # headless
-import matplotlib.pyplot as plt  # noqa: E402
-import shap  # noqa: E402
+import shap
 
 MODELS_DIR = Path(__file__).resolve().parents[2] / "models_app"
 DIABETES_DIR = MODELS_DIR / "diabetes"
@@ -130,50 +124,6 @@ def format_pct(prob: float) -> str:
     return f"{prob * 100:.1f}%"
 
 
-def _display_values(raw: dict) -> list[str]:
-    """What the clinician entered, in FEATURES order — shown on the SHAP
-    waterfall instead of the scaler's z-scores (which mean nothing to a
-    reader). The SHAP values themselves are unchanged."""
-    yes_no = lambda v: "yes" if v else "no"  # noqa: E731
-    return [
-        str(raw["gender"]).lower(),
-        f"{float(raw['age']):g} y",
-        yes_no(raw.get("hypertension")),
-        yes_no(raw.get("heart_disease")),
-        str(raw.get("smoking_history", "never")),
-        f"{float(raw['bmi']):g}",
-        f"{float(raw['HbA1c_level']):g} %",
-        f"{float(raw['blood_glucose_level']):g} mg/dL",
-    ]
-
-
-# pyplot keeps global state and FastAPI runs sync endpoints on a thread
-# pool: two predictions drawing at once would mix their figures.
-_PLOT_LOCK = threading.Lock()
-
-
-def _waterfall_png(shap_vals, explainer, display: list[str], title: str) -> bytes:
-    """SHAP waterfall like the notebook plots (results/shap_patient_*.png),
-    labelled with the entered values and readable feature names."""
-    with _PLOT_LOCK:
-        plt.figure(figsize=(10, 5))
-        shap.waterfall_plot(
-            shap.Explanation(
-                values=shap_vals,
-                base_values=explainer.expected_value,
-                data=np.array(display, dtype=object),
-                feature_names=[FEATURE_LABELS[f] for f in FEATURES],
-            ),
-            show=False,
-        )
-        plt.title(title, fontsize=11, fontweight="bold", pad=20)
-        plt.tight_layout()
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-        plt.close("all")
-    return buf.getvalue()
-
-
 def clinical_values(raw: dict) -> list[dict]:
     """Entered values with a status for the report: "normal", "elevated"
     (borderline / risk factor present) or "high" (diabetes range).
@@ -246,12 +196,6 @@ def predict(data: dict) -> dict:
     ]
 
     result_label = "🔴 Diabetic" if prediction == 1 else "🟢 Non-Diabetic"
-    # matplotlib's font has no emoji glyphs (they rendered as boxes)
-    title = (
-        f"{'Diabetic' if prediction == 1 else 'Non-Diabetic'} | "
-        f"Score: {format_pct(prob)} | Tier: {tier.replace('⚠️', '').strip()}"
-    )
-    png = _waterfall_png(shap_vals, explainer, _display_values(data), title)
 
     return {
         "probability": prob,
@@ -261,5 +205,4 @@ def predict(data: dict) -> dict:
         "threshold": threshold,
         "top_factors": factors[:3],
         "factors": factors,  # all 8, by impact — stored in predictions.top_factors
-        "waterfall_png": png,
     }

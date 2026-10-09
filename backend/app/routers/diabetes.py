@@ -49,17 +49,10 @@ def predict_diabetes(
     except diabetes_service.DiabetesModelNotInstalled as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 
-    png: bytes = result["waterfall_png"]
     record_id = uuid4()
-    waterfall_path = f"{user.id}/explanations/{record_id}.png"
 
     try:
         svc = get_service_client()
-        svc.storage.from_(BUCKET).upload(
-            waterfall_path,
-            png,
-            {"content-type": "image/png", "upsert": "true"},
-        )
         row = (
             svc.table("predictions")
             .insert(
@@ -73,7 +66,6 @@ def predict_diabetes(
                     "risk_tier": result["risk_tier"],
                     # all 8 factors, strongest first (the UI shows the top ones)
                     "top_factors": result["factors"],
-                    "waterfall_path": waterfall_path,
                 }
             )
             .execute()
@@ -97,7 +89,6 @@ def predict_diabetes(
         top_factors=result["top_factors"],
         factors=result["factors"],
         threshold=result["threshold"],
-        waterfall_url=signed_url(BUCKET, waterfall_path),
         created_at=created_at,
     )
 
@@ -170,7 +161,6 @@ def _report(row: dict, user: AuthUser) -> dict:
         values=diabetes_service.clinical_values(inp) if inp else [],
         doctor_name=(row.get("doctor") or {}).get("full_name"),
         reviewer_name=(row.get("reviewer") or {}).get("full_name"),
-        waterfall_url=signed_url(BUCKET, row["waterfall_path"]) if row.get("waterfall_path") else None,
     )
     return {
         "prediction": prediction,

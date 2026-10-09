@@ -337,14 +337,6 @@ export default function PredictionReportPage({
         </div>
       </div>
 
-      {p.waterfall_url && (
-        <details className="rounded-xl border border-slate-200 bg-white p-5">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-700">{t("report.technical")}</summary>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={p.waterfall_url} alt={t("result.waterfall")} className="mx-auto mt-4 w-full max-w-3xl rounded-lg border border-slate-100" />
-        </details>
-      )}
-
       {/* Banner-Group */}
       <div className="flex flex-col gap-3">
         {missingSecondary && (
