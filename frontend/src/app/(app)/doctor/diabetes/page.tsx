@@ -4,7 +4,6 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CircleAlert, Shield } from "lucide-react";
 
-import ClinicalBadge from "@/components/ClinicalBadge";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { initials, shortId } from "@/lib/clinical";
@@ -360,12 +359,6 @@ function DiabetesForm() {
             </>
           )}
         </div>
-        {patient && (
-          <span className="flex items-center gap-3">
-            <span className="text-xs text-slate-500">{t("m1.currentRisk")}</span>
-            <ClinicalBadge status={patient.status} withIcon />
-          </span>
-        )}
       </div>
 
       {/* Title-Header-Row */}

@@ -267,6 +267,8 @@ export interface PatientSummary {
   last_check_at: string | null;
   next_visit_at: string | null;
   doctors: CareTeamDoctor[];
+  latest_result?: { id: string; status: ClinicalStatus; created_at: string } | null;
+  latest_vitals?: PatientVitals | null;
 }
 
 // ── admin ────────────────────────────────────────────────────────────────────

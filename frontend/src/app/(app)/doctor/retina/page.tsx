@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, CircleAlert, Clock, Eye, Shield, Upload, UsersRound, X } from "lucide-react";
 
-import ClinicalBadge from "@/components/ClinicalBadge";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { initials, shortId } from "@/lib/clinical";
@@ -83,12 +82,6 @@ function PatientBar({
         )}
         {extra}
       </div>
-      {p && (
-        <span className="flex items-center gap-3">
-          <span className="text-xs text-slate-500">{t("m1.currentRisk")}</span>
-          <ClinicalBadge status={p.status} withIcon />
-        </span>
-      )}
     </div>
   );
 }

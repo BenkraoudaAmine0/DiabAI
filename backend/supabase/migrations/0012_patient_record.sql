@@ -7,7 +7,7 @@
 
 -- Insurance identifiers + blood group. Patients cannot edit them: 0008 only
 -- grants UPDATE on (full_name, phone, dob, sex). The national ID number shown
--- in the Figma is deliberately NOT stored (data minimisation, Loi 18-07).
+-- in the Figma is deliberately NOT stored (data minimisation).
 alter table public.profiles
   add column if not exists cnas_number text,
   add column if not exists chifa_number text,

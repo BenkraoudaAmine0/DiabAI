@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { CircleX, Dna, Play } from "lucide-react";
 
-import PrototypeBanner from "@/components/doctor/PrototypeBanner";
 import {
   BADGE,
   Badge,
@@ -227,7 +226,6 @@ export default function TypeClassificationPage() {
   const [research, setResearch] = useState(false);
   return (
     <div className="flex flex-col gap-6">
-      <PrototypeBanner />
       <PageTitle title={t("m2.title")} subtitle={t("m2.subtitle")} />
 
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">

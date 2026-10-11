@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CircleQuestionMark, Plus, TriangleAlert } from "lucide-react";
 
-import PrototypeBanner from "@/components/doctor/PrototypeBanner";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import type { ChatMessage, ChatSource, PanelPatient } from "@/lib/types";
@@ -221,7 +220,6 @@ export default function ClinicianChat() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PrototypeBanner />
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold text-slate-900">{t("rag.title")}</h1>
         <p className="text-sm text-slate-500">{t("rag.subtitle")}</p>

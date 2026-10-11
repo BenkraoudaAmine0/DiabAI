@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-import Icon from "@/components/Icon";
 import { useAuth } from "@/contexts/AuthContext";
-import { useI18n } from "@/i18n";
 
 const IDLE_MINUTES = 45;
 const KEY = "diabai-last-activity"; // shared by every open tab
@@ -19,14 +17,12 @@ function readShared(): number {
   }
 }
 
-/** Figma "Session-Timer": signs the user out after 45 minutes without
- *  activity (mouse, keyboard, touch) in any tab of the app, and shows the
- *  minutes left — amber in the last 5. */
+/** Signs the user out after 45 minutes without activity (mouse, keyboard,
+ *  touch) in any tab of the app. Renders nothing: the countdown badge was
+ *  removed from the top bar, the protection stays. */
 export default function SessionTimer() {
-  const { t } = useI18n();
   const { signOut } = useAuth();
   const router = useRouter();
-  const [left, setLeft] = useState(IDLE_MINUTES);
   const last = useRef(0);
 
   useEffect(() => {
@@ -49,9 +45,7 @@ export default function SessionTimer() {
 
     const tick = window.setInterval(async () => {
       const idleMs = Date.now() - Math.max(last.current, readShared());
-      const remaining = IDLE_MINUTES - idleMs / 60_000;
-      setLeft(Math.max(0, Math.ceil(remaining)));
-      if (remaining <= 0) {
+      if (idleMs >= IDLE_MINUTES * 60_000) {
         window.clearInterval(tick);
         await signOut();
         router.push("/login");
@@ -64,16 +58,5 @@ export default function SessionTimer() {
     };
   }, [signOut, router]);
 
-  const low = left <= 5;
-  return (
-    <span
-      title={t("session.title")}
-      className={`hidden items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-xs font-semibold text-status-prediabetes sm:inline-flex ${
-        low ? "bg-amber-200" : "bg-[#fef3c7]"
-      }`}
-    >
-      <Icon name="clock" size={12} />
-      {t("session.left", { m: left })}
-    </span>
-  );
+  return null;
 }

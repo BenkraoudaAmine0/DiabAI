@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BrainCircuit, CircleX, Footprints, Heart, Printer } from "lucide-react";
 
-import PrototypeBanner from "@/components/doctor/PrototypeBanner";
 import { BADGE, Badge, IconTile, NumberField, PageTitle, Segmented, num } from "@/components/doctor/ui";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
@@ -229,7 +228,6 @@ export default function ComplicationsHubPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PrototypeBanner />
       <PageTitle title={t("m4.title")} subtitle={t("m4.subtitle")} />
 
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">

@@ -1,5 +1,5 @@
 """The signed-in user's own account: professional profile, data export
-(Loi 18-07 right of access) and account deletion requests."""
+(right of access) and account deletion requests."""
 
 from datetime import datetime, timezone
 from typing import Optional
@@ -42,7 +42,11 @@ def me(user: AuthUser = Depends(get_current_user)) -> dict:
     return {
         "profile": {
             k: profile.get(k)
-            for k in ("id", "email", "role", "full_name", "phone", "specialty", "license_number", "facility")
+            for k in (
+                "id", "email", "role", "full_name", "phone", "dob", "sex",
+                "specialty", "license_number", "facility",
+                "blood_group", "cnas_number", "chifa_number", "created_at",
+            )
         },
         "deletion_request": pending,
     }
@@ -99,6 +103,14 @@ def export_my_data(user: AuthUser = Depends(get_current_user)) -> JSONResponse:
             svc.table("notifications").select("kind, data, created_at, read")
             .eq("user_id", user.id).execute().data or []
         )
+        try:  # measurements recorded by the care team (migration 0012)
+            data["vitals"] = (
+                svc.table("patient_vitals")
+                .select("measured_at, systolic, diastolic, weight_kg, height_cm, fasting_glucose, hba1c, egfr, acr")
+                .eq("patient_id", user.id).order("measured_at", desc=True).execute().data or []
+            )
+        except Exception:
+            pass
     else:
         data["panel"] = (
             svc.table("doctor_patients").select("patient_id, created_at")

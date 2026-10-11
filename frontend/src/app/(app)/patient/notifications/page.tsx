@@ -7,7 +7,7 @@ import { BookOpen, CalendarDays, ClipboardCheck, ScanEye, UserRound, type Lucide
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useI18n } from "@/i18n";
-import { notificationWhen, shortDate, timeOfDay } from "@/lib/patient";
+import { notificationBody, notificationTitle, notificationWhen } from "@/lib/patient";
 import type { NotificationItem } from "@/lib/types";
 
 type Filter = "all" | "reminder" | "education";
@@ -46,22 +46,8 @@ export default function PatientNotificationsPage() {
 
   const shown = notifications.filter((n) => filter === "all" || CATEGORY[n.kind] === filter);
 
-  function title(n: NotificationItem): string {
-    if (n.kind === "visit_reminder") return t("pt.notif.visitTitle");
-    if (n.kind === "panel_added") return t("pt.notif.careTitle");
-    return t("pt.notif.resultTitle");
-  }
-
-  function body(n: NotificationItem): string {
-    if (n.kind === "visit_reminder" && n.data?.at) {
-      return t("pt.notif.visitBody", {
-        date: shortDate(n.data.at, lang) ?? "",
-        time: timeOfDay(n.data.at, lang),
-      });
-    }
-    const scan = n.data?.scan ? t(`scanShort.${n.data.scan}`) : "";
-    return t(`notif.${n.kind}`, { doctor: n.data?.doctor ?? "", scan });
-  }
+  const title = (n: NotificationItem) => notificationTitle(t, n.kind);
+  const body = (n: NotificationItem) => notificationBody(t, lang, n);
 
   async function open(n: NotificationItem) {
     if (!n.read) await markRead([n.id]);
