@@ -56,9 +56,14 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     signed_url_ttl: int = 60 * 60 * 24  # 24h
 
+    # Hugging Face
+    hf_token: str = ""
+    hf_model_repo_id: str = "BenkraoudaAmine/diabai-models"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
 
 
 @lru_cache

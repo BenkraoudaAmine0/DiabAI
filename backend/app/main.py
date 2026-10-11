@@ -32,6 +32,18 @@ from app.services.audit_service import log_error
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure models exist locally (downloads from private Hugging Face repo if missing)
+    settings = get_settings()
+    if settings.hf_token:
+        import os
+        os.environ.setdefault("HF_TOKEN", settings.hf_token)
+
+    try:
+        from scripts.download_models import ensure_models
+        ensure_models(token=settings.hf_token or None, repo_id=settings.hf_model_repo_id)
+    except Exception as exc:
+        print(f"[startup] model sync from HF skipped/failed: {exc}")
+
     # Report model availability at boot — never crash, the app must run even
     # before the user drops their trained vision models into models_app/.
     try:
@@ -40,6 +52,7 @@ async def lifespan(app: FastAPI):
               f"({', '.join(diabetes_service.REQUIRED_FILES)})")
     except Exception as exc:
         print(f"[startup] diabetes model: MISSING — {exc}")
+
 
     for scan_type, ok in vision_service.availability().items():
         state = "OK" if ok else "not installed (503 until added)"
@@ -143,6 +156,17 @@ app.include_router(
 )
 
 
+@app.get("/")
+def root() -> dict:
+    return {
+        "status": "ok",
+        "service": "DiabAI API",
+        "version": app.version,
+        "docs": "/docs",
+        "health": "/api/health",
+    }
+
+
 @app.get("/api/health")
 def health() -> dict:
     return {
@@ -154,3 +178,4 @@ def health() -> dict:
             **vision_service.availability(),
         },
     }
+
