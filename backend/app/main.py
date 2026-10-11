@@ -156,7 +156,7 @@ app.include_router(
 )
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root() -> dict:
     return {
         "status": "ok",
@@ -167,8 +167,9 @@ def root() -> dict:
     }
 
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def health() -> dict:
+
     return {
         "status": "ok",
         "version": app.version,
