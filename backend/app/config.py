@@ -22,11 +22,11 @@ class Settings(BaseSettings):
     gemini_embedding_model: str = "gemini-embedding-001"
     embedding_dimensions: int = 768
 
-    # Knowledge-base embeddings: "local" (free, on this machine, no rate
-    # limits) or "gemini" (API). Questions and documents must use the same
-    # model — see app/services/embeddings.py.
-    embedding_provider: str = "local"
+    # Knowledge-base embeddings: "gemini" (API, 0 MB server RAM) or "local" (fastembed ONNX, ~1.5 GB RAM).
+    # Questions and documents must use the same model — see app/services/embeddings.py.
+    embedding_provider: str = "gemini"
     local_embedding_model: str = "google/embeddinggemma-300m"  # 768-d, multilingual
+
     local_embedding_dir: str = "models_app/embeddings"  # downloaded once (~1.2 GB)
 
     # USD per million tokens — adjust to your actual Google AI pricing

@@ -133,7 +133,8 @@ def ingest(svc, path: Path, kind: str) -> str:
         .execute()
         .data[0]
     )
-    return f"{done['chunk_count']} chunks → “{done['title']}”"
+    return f"{done['chunk_count']} chunks -> \"{done['title']}\""
+
 
 
 def main() -> None:

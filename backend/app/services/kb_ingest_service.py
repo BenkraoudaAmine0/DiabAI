@@ -34,6 +34,8 @@ from app.services.kb_loaders import IngestError, LoadedFile
 from app.services.supabase_client import get_service_client
 from app.services.usage_service import log_usage
 
+import asyncio
+
 __all__ = ["IngestError", "LoadedFile"]  # re-exported for routers/kb.py
 
 BUCKET = "kb-docs"
@@ -222,6 +224,8 @@ def _image_reader(document_id: str, user_id: Optional[str]) -> kb_loaders.ReadIm
             detail={"purpose": "kb_image", "document_id": document_id},
         )
 
+        time.sleep(1)
+
     return read
 
 
@@ -303,6 +307,9 @@ def ingest_document(
             if done % 500 < EMBED_BATCH or done == len(chunks):
                 print(f"[kb] {document_id}: {done}/{len(chunks)} chunks "
                       f"({time.monotonic() - started:.0f}s)")
+            if not embeddings.is_local() and done < len(chunks):
+                time.sleep(1.0)  # Gentle pacing under Gemini's 30k tokens/min quota
+
 
         _update(
             document_id,
