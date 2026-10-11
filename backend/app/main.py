@@ -96,10 +96,12 @@ s = get_settings()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=s.cors_origin_list or ["http://localhost:3000"],
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.middleware("http")
 async def request_metrics(request: Request, call_next):
