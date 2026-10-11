@@ -56,7 +56,7 @@ const en: Record<string, string> = {
   "landing.panel2": "Foot & neck scans",
   "landing.panel3": "Retinopathy grading",
   "landing.panel4": "Cited AI assistant",
-  "landing.bandTag": "Algerian application — Data hosted in Algeria",
+  "landing.bandTag": "Secure application — role-based access to health data",
   "landing.bandPrivacy": "Privacy",
   "landing.bandTerms": "Terms",
   "landing.bandContact": "Contact",
@@ -94,14 +94,13 @@ const en: Record<string, string> = {
   "landing.navModules": "Our modules",
   "landing.navContact": "Contact us",
   "landing.legalTitle": "Legal & Compliance",
-  "landing.legal1": "Law 18-07 (Data Protection)",
-  "landing.legal2": "Data hosted in Algeria",
-  "landing.legal3": "ANPDP compliance",
+  "landing.legal1": "Data protection",
+  "landing.legal2": "Role-based access",
+  "landing.legal3": "Audit trail",
   "landing.legal4": "Ethics charter",
-  "landing.bottomNote":
-    "Algerian application - Data hosted in Algeria | Student prototype - Academic use only.",
+  "landing.bottomNote": "Student prototype - Academic use only.",
   "landing.bottomCompliance":
-    "Compliant with Law 18-07 on the protection of individuals in the processing of health data.",
+    "Health data is processed with role-based access and an audit trail.",
   "landing.copyright": "DiabAI. Academic Project.",
 
   // auth
@@ -125,8 +124,7 @@ const en: Record<string, string> = {
   "auth.step2": "Complete the fields for your role",
   "auth.step3": "Verify your email and sign in securely",
   "auth.registerTrustTitle": "Designed for responsible use of health data",
-  "auth.registerTrustDesc":
-    "Your account uses role-based access. Health data is hosted in Algeria and processed under the applicable confidentiality framework.",
+  "auth.registerTrustDesc": "Your account uses role-based access. Health data is only visible to the care team, with an audit trail.",
   "auth.helpLabel": "Need help signing up?",
   "auth.helpLink": "Contact support",
   "register.namePlaceholder": "Your full name",
@@ -170,8 +168,7 @@ const en: Record<string, string> = {
     "If an account exists for this email, a reset link has been sent.",
   "login.cta": "Sign in securely",
   "login.trustTitle": "Your health data stays protected",
-  "login.trustDesc":
-    "Encrypted access, role-based permissions and data hosted in Algeria.",
+  "login.trustDesc": "Encrypted access, role-based permissions and an audit trail.",
   "login.pitchEyebrow": "Continuity of care",
   "login.pitchTitle": "The right information, at the right moment to decide.",
   "login.pitchDesc":
@@ -179,7 +176,7 @@ const en: Record<string, string> = {
   "login.point1": "Access tailored for doctors and patients",
   "login.point2": "Clear traceability of clinical activity",
   "login.point3": "Built for responsible clinical support",
-  "login.footerTag": "Algerian application — Data hosted in Algeria",
+  "login.footerTag": "Secure application — role-based access to health data",
   "login.privacy": "Privacy",
   "login.support": "Support",
 

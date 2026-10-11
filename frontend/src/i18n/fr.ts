@@ -56,7 +56,7 @@ const fr: Record<string, string> = {
   "landing.panel2": "Scans pied & cou",
   "landing.panel3": "Gradation rétinopathie",
   "landing.panel4": "Assistant IA sourcé",
-  "landing.bandTag": "Application algérienne — Données hébergées en Algérie",
+  "landing.bandTag": "Application sécurisée — accès aux données de santé par rôle",
   "landing.bandPrivacy": "Confidentialité",
   "landing.bandTerms": "Conditions",
   "landing.bandContact": "Contact",
@@ -94,14 +94,13 @@ const fr: Record<string, string> = {
   "landing.navModules": "Nos Modules",
   "landing.navContact": "Nous Contacter",
   "landing.legalTitle": "Légal & Conformité",
-  "landing.legal1": "Loi 18-07 (Protection des Données)",
-  "landing.legal2": "Données hébergées en Algérie",
-  "landing.legal3": "Conformité ANPDP",
+  "landing.legal1": "Protection des données",
+  "landing.legal2": "Accès par rôle",
+  "landing.legal3": "Journal d’audit",
   "landing.legal4": "Charte Déontologique",
-  "landing.bottomNote":
-    "Application algérienne - Données hébergées en Algérie | Prototype étudiant - Usage académique uniquement.",
+  "landing.bottomNote": "Prototype étudiant - Usage académique uniquement.",
   "landing.bottomCompliance":
-    "Conforme à la Loi 18-07 relative à la protection des personnes physiques dans le traitement des données de santé.",
+    "Les données de santé sont traitées avec un accès par rôle et un journal d’audit.",
   "landing.copyright": "DiabAI. Projet Académique.",
 
   // auth
@@ -125,8 +124,7 @@ const fr: Record<string, string> = {
   "auth.step2": "Complétez les champs liés à votre rôle",
   "auth.step3": "Vérifiez votre e-mail et accédez en sécurité",
   "auth.registerTrustTitle": "Conçu pour un usage responsable des données de santé",
-  "auth.registerTrustDesc":
-    "Votre compte utilise un accès adapté au rôle. Les données de santé sont hébergées en Algérie et traitées selon le cadre de confidentialité applicable.",
+  "auth.registerTrustDesc": "Votre compte utilise un accès adapté au rôle. Les données de santé ne sont visibles que par l’équipe soignante, avec un journal d’audit.",
   "auth.helpLabel": "Besoin d'aide pour vous inscrire ?",
   "auth.helpLink": "Contacter l'assistance",
   "register.namePlaceholder": "Votre nom complet",
@@ -170,8 +168,7 @@ const fr: Record<string, string> = {
     "Si un compte existe pour cet e-mail, un lien de réinitialisation vient d'être envoyé.",
   "login.cta": "Se connecter en toute sécurité",
   "login.trustTitle": "Vos données de santé restent protégées",
-  "login.trustDesc":
-    "Accès chiffré, autorisations par rôle et données hébergées en Algérie.",
+  "login.trustDesc": "Accès chiffré, autorisations par rôle et journal d’audit.",
   "login.pitchEyebrow": "Continuité des soins",
   "login.pitchTitle": "La bonne information, au bon moment pour décider.",
   "login.pitchDesc":
@@ -179,7 +176,7 @@ const fr: Record<string, string> = {
   "login.point1": "Accès adapté aux médecins et aux patients",
   "login.point2": "Traçabilité claire de l'activité clinique",
   "login.point3": "Conçu pour une aide clinique responsable",
-  "login.footerTag": "Application algérienne — Données hébergées en Algérie",
+  "login.footerTag": "Application sécurisée — accès aux données de santé par rôle",
   "login.privacy": "Confidentialité",
   "login.support": "Assistance",
 

@@ -10,9 +10,11 @@ import type { ScanResult } from "@/lib/types";
 export default function ScanUploader({
   scanType,
   patientId,
+  onDone,
 }: {
   scanType: "foot" | "neck" | "eye";
   patientId?: string;
+  onDone?: (result: ScanResult) => void; // e.g. refresh a list of past scans
 }) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +45,7 @@ export default function ScanUploader({
         body: form,
       });
       setResult(res);
+      onDone?.(res);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("common.error"));
     } finally {

@@ -6,7 +6,7 @@ import { Mail, Phone, Stethoscope, X } from "lucide-react";
 import { usePatientSummary } from "@/hooks/usePatientSummary";
 import { useI18n } from "@/i18n";
 
-/** "Consult a doctor" (questionnaire, symptom check, chat): the patient's
+/** "Consult a doctor" (from the chat): the patient’s
  *  care team — the doctors whose panel they are in — with contact links. */
 export default function ConsultDoctorDialog({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();

@@ -1,5 +1,7 @@
 /** Small formatting helpers shared by the patient portal pages. */
 
+import type { NotificationItem } from "@/lib/types";
+
 export function firstName(fullName: string | null | undefined): string {
   return (fullName ?? "").trim().split(/\s+/)[0] ?? "";
 }
@@ -61,4 +63,27 @@ export function writeFriendly(on: boolean): void {
   } catch {
     /* storage unavailable: the toggle still works for this page view */
   }
+}
+
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
+
+/** Notification wording shared by the home card and the notifications page. */
+export function notificationTitle(t: Translate, kind: NotificationItem["kind"]): string {
+  if (kind === "visit_reminder") return t("pt.notif.visitTitle");
+  if (kind === "panel_added") return t("pt.notif.careTitle");
+  return t("pt.notif.resultTitle");
+}
+
+export function notificationBody(t: Translate, lang: string, n: NotificationItem): string {
+  if (n.kind === "visit_reminder" && n.data?.at) {
+    return t("pt.notif.visitBody", { date: shortDate(n.data.at, lang) ?? "", time: timeOfDay(n.data.at, lang) });
+  }
+  const scan = n.data?.scan ? t(`scanShort.${n.data.scan}`) : "";
+  return t(`notif.${n.kind}`, { doctor: n.data?.doctor ?? "", scan });
+}
+
+/** Body mass index from kg and cm (one decimal), or null. */
+export function bmiOf(weightKg: number | null | undefined, heightCm: number | null | undefined): number | null {
+  if (!weightKg || !heightCm) return null;
+  return Math.round((weightKg / (heightCm / 100) ** 2) * 10) / 10;
 }

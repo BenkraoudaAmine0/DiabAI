@@ -122,7 +122,7 @@ function UserCard() {
 }
 
 /** Doctor workspace frame — Figma 02 Doctor Screens: 260px #eaf5f1 sidebar,
- *  top bar (patient search · FR|EN · session timer), mini footer. */
+ *  top bar (patient search · FR|EN), mini footer; signs out after 45 min idle. */
 export default function DoctorShell({ children }: { children: React.ReactNode }) {
   const { profile } = useAuth();
   const { t } = useI18n();

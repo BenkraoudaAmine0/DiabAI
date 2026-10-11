@@ -3,11 +3,29 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth import AuthUser, get_current_user
+from app.services.clinical import clinical_status
 from app.services.supabase_client import get_service_client, signed_url
 
 router = APIRouter()
 
 BUCKET = "scans"
+VITAL_COLUMNS = (
+    "id, measured_at, systolic, diastolic, weight_kg, height_cm, "
+    "fasting_glucose, hba1c, egfr, acr"
+)
+
+
+def _my_vitals(svc, user_id: str, limit: int) -> list[dict] | None:
+    """The patient's own measurements, newest first (None before migration
+    0012). RLS would allow this read too; the backend uses the service role."""
+    try:
+        return (
+            svc.table("patient_vitals").select(VITAL_COLUMNS)
+            .eq("patient_id", user_id)
+            .order("measured_at", desc=True).limit(limit).execute().data or []
+        )
+    except Exception:
+        return None
 
 
 def _latest(rows: list[dict]) -> str | None:
@@ -21,15 +39,16 @@ def my_summary(user: AuthUser = Depends(get_current_user)) -> dict:
     if user.role != "patient":
         raise HTTPException(status_code=403, detail="Patient access only")
     svc = get_service_client()
+    columns = "id, created_at, probability, prediction, risk_tier"
     try:
         preds = (
-            svc.table("predictions").select("created_at")
+            svc.table("predictions").select(columns)
             .eq("patient_id", user.id).eq("status", "confirmed")
             .order("created_at", desc=True).limit(1).execute().data or []
         )
     except Exception:  # before migration 0007 there is no review status
         preds = (
-            svc.table("predictions").select("created_at")
+            svc.table("predictions").select(columns)
             .eq("patient_id", user.id)
             .order("created_at", desc=True).limit(1).execute().data or []
         )
@@ -53,11 +72,29 @@ def my_summary(user: AuthUser = Depends(get_current_user)) -> dict:
     doctors = [
         link["profiles"] for link in links if isinstance(link.get("profiles"), dict)
     ]
+    latest = preds[0] if preds else None
+    vitals = _my_vitals(svc, user.id, 1)
     return {
         "last_check_at": _latest(preds + scans),
         "next_visit_at": profile.get("next_visit_at"),  # absent before 0011
         "doctors": doctors,
+        # only a result the doctor confirmed reaches the patient
+        "latest_result": {
+            "id": latest["id"],
+            "status": clinical_status(latest),
+            "created_at": latest["created_at"],
+        } if latest else None,
+        "latest_vitals": vitals[0] if vitals else None,
     }
+
+
+@router.get("/me/vitals")
+def my_vitals(user: AuthUser = Depends(get_current_user)) -> dict:
+    """Measurements and lab results the care team recorded for the patient."""
+    if user.role != "patient":
+        raise HTTPException(status_code=403, detail="Patient access only")
+    vitals = _my_vitals(get_service_client(), user.id, 100)
+    return {"vitals": vitals or [], "migrated": vitals is not None}
 
 
 @router.get("/me")

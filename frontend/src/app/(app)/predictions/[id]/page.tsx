@@ -183,7 +183,7 @@ export default function PredictionReportPage({
     <div className="flex flex-col gap-6">
       <Link href={backHref} className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-brand">
         <ArrowLeft size={14} />
-        {canReview ? t("report.backToPatient") : t("history.title")}
+        {canReview ? t("report.backToPatient") : t("pt.nav.results")}
       </Link>
 
       {/* Patient-Context-Header */}
@@ -449,7 +449,7 @@ export default function PredictionReportPage({
             {exporting ? t("report.exporting") : t("report.export")}
           </button>
           <Link href={backHref} className="rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:opacity-90">
-            {canReview ? t("report.toRecord") : t("history.title")}
+            {canReview ? t("report.toRecord") : t("pt.nav.results")}
           </Link>
         </div>
       </div>

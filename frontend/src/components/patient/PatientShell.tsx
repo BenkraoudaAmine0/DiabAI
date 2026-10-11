@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BookOpen,
-  ClipboardList,
+  FileHeart,
+  Footprints,
   House,
   LogOut,
   MessageCircle,
+  ScanFace,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -25,15 +27,13 @@ interface NavItem {
   also?: string[]; // other paths that highlight this item
 }
 
-// Figma 06 Patient Screens · sidebar (Home order)
+// Patient portal sidebar: home, the patient's own results and photo
+// checks, education, chat, settings
 const NAV: NavItem[] = [
-  {
-    href: "/patient",
-    labelKey: "pt.nav.home",
-    icon: House,
-    also: ["/patient/history", "/patient/foot", "/patient/neck", "/predictions"],
-  },
-  { href: "/patient/questionnaire", labelKey: "pt.nav.questionnaire", icon: ClipboardList },
+  { href: "/patient", labelKey: "pt.nav.home", icon: House },
+  { href: "/patient/history", labelKey: "pt.nav.results", icon: FileHeart, also: ["/predictions"] },
+  { href: "/patient/foot", labelKey: "pt.nav.foot", icon: Footprints },
+  { href: "/patient/neck", labelKey: "pt.nav.neck", icon: ScanFace },
   { href: "/patient/learn", labelKey: "pt.nav.learn", icon: BookOpen },
   { href: "/chat", labelKey: "pt.nav.chat", icon: MessageCircle },
   {
