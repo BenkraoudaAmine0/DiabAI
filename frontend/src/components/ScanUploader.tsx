@@ -1,20 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CircleAlert, ImageUp, RotateCcw } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
+import { MAX_PHOTO_MB, TONE_BADGE, confidencePct, photoProblem, scanLabel, scanTone } from "@/lib/scans";
 import type { ScanResult } from "@/lib/types";
 
-/** Shared image upload + analyze + result UI for foot / neck / eye scans. */
+/** Shared photo upload → analysis → result for the foot / neck checks
+ *  (patients scan themselves; doctors pass the patient's id).
+ *  `renderAfterResult` adds e.g. the clinician's decision under the result. */
 export default function ScanUploader({
   scanType,
   patientId,
   onDone,
+  renderAfterResult,
 }: {
   scanType: "foot" | "neck" | "eye";
   patientId?: string;
   onDone?: (result: ScanResult) => void; // e.g. refresh a list of past scans
+  renderAfterResult?: (result: ScanResult) => React.ReactNode;
 }) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,11 +30,21 @@ export default function ScanUploader({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
 
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
+
   function pick(f: File | null) {
-    setFile(f);
     setResult(null);
     setError(null);
-    if (preview) URL.revokeObjectURL(preview);
+    if (f) {
+      const problem = photoProblem(f);
+      if (problem) {
+        setError(t(problem, { mb: MAX_PHOTO_MB }));
+        return;
+      }
+    }
+    setFile(f);
     setPreview(f ? URL.createObjectURL(f) : null);
   }
 
@@ -40,10 +56,7 @@ export default function ScanUploader({
       const form = new FormData();
       form.append("file", file);
       if (patientId) form.append("patient_id", patientId);
-      const res = await api<ScanResult>(`/api/scan/${scanType}`, {
-        method: "POST",
-        body: form,
-      });
+      const res = await api<ScanResult>(`/api/scan/${scanType}`, { method: "POST", body: form });
       setResult(res);
       onDone?.(res);
     } catch (e) {
@@ -54,72 +67,54 @@ export default function ScanUploader({
   }
 
   if (result) {
-    const probs = Object.entries(result.probabilities).sort(
-      (a, b) => b[1] - a[1]
-    );
+    const tone = scanTone(result.label);
+    const probs = Object.entries(result.probabilities).sort((a, b) => b[1] - a[1]);
     return (
-      <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {t("scan.result")}
+      <div className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-6">
+        <div className="flex flex-wrap items-start gap-5">
+          {(result.image_url ?? preview) && (
+            // eslint-disable-next-line @next/next/no-img-element -- signed Storage URL / object URL
+            <img src={result.image_url ?? preview ?? ""} alt="" className="size-28 shrink-0 rounded-lg bg-slate-100 object-cover" />
+          )}
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t("scan.result")}</p>
+            <span className={`w-fit rounded-lg border px-4 py-2 text-lg font-extrabold ${TONE_BADGE[tone]}`}>{scanLabel(t, result.label)}</span>
+            <p className="text-sm text-slate-600">
+              {t("scan.confidenceIs", { n: confidencePct(result.confidence) ?? "—" })}
+              {result.uncertain && result.top_class && ` · ${t("scan.mostLikely", { label: scanLabel(t, result.top_class) })}`}
             </p>
-            <p className="text-3xl font-bold text-slate-900">{result.label}</p>
-            {result.top_class && result.uncertain && (
-              <p className="mt-0.5 text-xs text-slate-400">
-                top: {result.top_class}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <span className="rounded-full bg-teal-50 px-4 py-1.5 text-sm font-semibold text-teal-700">
-              {(result.confidence * 100).toFixed(1)}% {t("scan.confidence")}
-            </span>
-            {result.uncertain && (
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                ⚠ {t("scan.uncertain")}
-              </span>
-            )}
-            {result.referable_dr != null && (
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  result.referable_dr
-                    ? "bg-red-100 text-red-700"
-                    : "bg-emerald-100 text-emerald-700"
-                }`}
-              >
-                {result.referable_dr ? "⚠ " : "✓ "}
-                {t("scan.referable")} ({(100 * (result.referable_dr_probability ?? 0)).toFixed(1)}%)
-              </span>
-            )}
           </div>
         </div>
 
-        <div className="space-y-2">
+        {result.uncertain && (
+          <p className="flex items-start gap-2 rounded-lg bg-[#fef3c7] px-3 py-2 text-[13px] text-[#92400e]">
+            <CircleAlert size={16} className="mt-0.5 shrink-0" />
+            {t("scan.uncertainHelp")}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2.5">
           {probs.map(([label, p]) => (
-            <div key={label}>
-              <div className="mb-1 flex justify-between text-xs text-slate-500">
-                <span>{label}</span>
-                <span>{(p * 100).toFixed(1)}%</span>
+            <div key={label} className="flex flex-col gap-1">
+              <div className="flex justify-between text-xs text-slate-600">
+                <span>{scanLabel(t, label)}</span>
+                <span className="font-mono font-semibold">{(p * 100).toFixed(0)}%</span>
               </div>
-              <div className="h-2 rounded-full bg-slate-100">
-                <div
-                  className="h-2 rounded-full bg-teal-500"
-                  style={{ width: `${Math.max(2, p * 100)}%` }}
-                />
+              <div className="h-2 overflow-hidden rounded bg-slate-100">
+                <div className="h-full rounded bg-brand" style={{ width: `${Math.max(2, p * 100)}%` }} />
               </div>
             </div>
           ))}
         </div>
 
-        {result.disclaimer && (
-          <p className="text-xs text-slate-400">{result.disclaimer}</p>
-        )}
+        {renderAfterResult?.(result)}
 
         <button
+          type="button"
           onClick={() => pick(null)}
-          className="w-full rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"
+          className="flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
+          <RotateCcw size={15} />
           {t("scan.again")}
         </button>
       </div>
@@ -127,61 +122,64 @@ export default function ScanUploader({
   }
 
   return (
-    <div className="space-y-4">
-      <button
+    <div className="flex flex-col gap-4">
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => inputRef.current?.click()}
-        className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-500 transition-colors hover:border-teal-500 hover:text-teal-600"
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && inputRef.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          pick(e.dataTransfer.files?.[0] ?? null);
+        }}
+        className="flex min-h-[280px] cursor-pointer flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center transition-colors hover:border-brand hover:bg-[#f6faf8]"
       >
         {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={preview}
-            alt="preview"
-            className="h-full w-full rounded-xl object-contain"
-          />
+          // eslint-disable-next-line @next/next/no-img-element -- local object URL
+          <img src={preview} alt={t("scan.preview")} className="max-h-[320px] w-full rounded-lg object-contain" />
         ) : (
           <>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path
-                d="M12 16V8m0 0l-3 3m3-3l3 3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="text-sm font-medium">{t("scan.upload")}</span>
+            <span className="flex size-14 items-center justify-center rounded-full bg-pt-mint text-brand">
+              <ImageUp size={28} strokeWidth={1.6} />
+            </span>
+            <div className="flex flex-col gap-1">
+              <p className="text-base font-bold text-slate-900">{t("scan.upload")}</p>
+              <p className="text-[13px] text-slate-500">{t("scan.formats", { mb: MAX_PHOTO_MB })}</p>
+            </div>
+            <span className="rounded-lg border border-brand px-5 py-2 text-[13px] font-semibold text-brand">{t("scan.browse")}</span>
           </>
         )}
-      </button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => pick(e.target.files?.[0] ?? null)}
-      />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            pick(e.target.files?.[0] ?? null);
+            e.target.value = ""; // allow re-picking the same file
+          }}
+        />
+      </div>
 
-      {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </p>
-      )}
+      {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
-      <button
-        onClick={analyze}
-        disabled={!file || busy}
-        className="w-full rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {busy ? (
-          <span className="inline-flex items-center gap-2">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            {t("scan.analyzing")}
-          </span>
-        ) : (
-          t("scan.analyze")
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {file && !busy && (
+          <button type="button" onClick={() => pick(null)} className="px-3 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-700">
+            {t("common.cancel")}
+          </button>
         )}
-      </button>
+        <button
+          type="button"
+          onClick={analyze}
+          disabled={!file || busy}
+          className="flex items-center gap-2 rounded-lg bg-brand px-6 py-3 text-sm font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy && <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+          {busy ? t("scan.analyzing") : t("scan.analyze")}
+        </button>
+      </div>
     </div>
   );
 }

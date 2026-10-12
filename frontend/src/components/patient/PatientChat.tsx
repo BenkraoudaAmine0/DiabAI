@@ -158,7 +158,7 @@ export default function PatientChat() {
   const lastSources = [...messages].reverse().find((m) => m.role === "assistant")?.sources ?? [];
 
   return (
-    <div className="flex h-[calc(100vh-136px)] min-h-[560px] flex-col gap-6">
+    <div className="flex h-[calc(100dvh-128px)] min-h-[560px] flex-col gap-6">
       {/* header */}
       <div className="flex flex-col gap-4 rounded-2xl border border-[#dde9e4] bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">

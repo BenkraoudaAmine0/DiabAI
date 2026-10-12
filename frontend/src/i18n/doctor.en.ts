@@ -484,6 +484,9 @@ const drEn: Record<string, string> = {
   "auth.mfaOther": "Use another account",
   "ds.mfaRequired": "Your organisation requires two-factor authentication for your role: turn it on below to continue.",
   "diabetes.running": "Running the assessment…",
+  "dr.nav.section": "Clinical workspace",
+  "dr.bell": "{n} assessments to review",
+  "pp.btnScans": "Foot & neck photo",
 };
 
 export default drEn;

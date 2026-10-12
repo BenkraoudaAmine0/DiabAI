@@ -57,7 +57,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       let str = dictionaries[lang][key] ?? dictionaries.en[key] ?? key;
       if (vars) {
         for (const [k, v] of Object.entries(vars)) {
-          str = str.replace(`{${k}}`, String(v));
+          str = str.replaceAll(`{${k}}`, String(v));
         }
       }
       return str;

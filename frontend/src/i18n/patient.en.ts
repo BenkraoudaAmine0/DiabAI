@@ -198,6 +198,10 @@ const ptEn: Record<string, string> = {
   "pt.set.careTeamText": "Doctors who follow you on DiabAI.",
   "pt.check.foot.disclaimer": "This is a screening aid, not a diagnosis. Show the result to your doctor, and see a doctor quickly if a wound is painful, red, swollen or not healing.",
   "pt.check.neck.disclaimer": "This is a screening aid, not a diagnosis. Dark, thick or velvety skin on the neck is worth showing to your doctor, who may check your blood sugar.",
+  "pt.nav.section": "My health",
+  "pt.bell": "{n} unread notifications",
+  "pt.check.reviewed": "Checked by your doctor",
+  "pt.check.reviewedAs": "Your doctor’s reading: {label}",
 };
 
 export default ptEn;

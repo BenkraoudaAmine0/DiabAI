@@ -20,26 +20,24 @@
   --color-status-critical: #dc2626;
   --color-status-insufficient: #6b7280;
 
-  --color-pt-deep: #084e46;
-  --color-pt-primary: #0b6b5f;
-  --color-pt-mint: #d6ebe5;
+  /* One workspace palette for the patient, doctor and admin areas (the
+     doctor's light theme): pt-* and adm-* alias the brand / slate tones. */
+  --color-pt-deep: #0b5e39;
+  --color-pt-primary: #0e7c4a;
+  --color-pt-mint: #e6f2eb;
   --color-pt-mint-soft: #eaf5f1;
-  --color-pt-cream: #f7f5ef;
-  --color-pt-ink: #17332f;
-  --color-pt-muted: #667773;
-  --color-pt-border: #dde5e1;
+  --color-pt-cream: #f8fafc;
+  --color-pt-ink: #0f172a;
+  --color-pt-muted: #64748b;
+  --color-pt-border: #e2e8f0;
 
-  /* Figma 05 Admin Screens */
-  --color-adm-side: #102d35;
-  --color-adm-side-active: #1a4a53;
-  --color-adm-side-muted: #9cb4ba;
-  --color-adm-bg: #f3f7f8;
-  --color-adm-soft: #f7fafa;
-  --color-adm-border: #dce7e9;
-  --color-adm-ink: #17323a;
-  --color-adm-muted: #688087;
-  --color-adm-teal: #0a8f83;
-  --color-adm-tint: #ddf4f1;
+  --color-adm-bg: #f8fafc;
+  --color-adm-soft: #f1f5f9;
+  --color-adm-border: #e2e8f0;
+  --color-adm-ink: #0f172a;
+  --color-adm-muted: #64748b;
+  --color-adm-teal: #0e7c4a;
+  --color-adm-tint: #e6f2eb;
   --color-adm-green: #17805c;
   --color-adm-green-bg: #e3f5ec;
   --color-adm-blue: #356cc9;
@@ -75,7 +73,11 @@ body {
   font-family: var(--font-sans);
 }
 
-/* thin, quiet scrollbars for panels and chat */
+/* thin, quiet scrollbars for panels, chat and the sidebar */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
 .scroll-slim::-webkit-scrollbar {
   width: 6px;
   height: 6px;

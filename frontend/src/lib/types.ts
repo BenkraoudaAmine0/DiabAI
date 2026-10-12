@@ -146,6 +146,11 @@ export interface ScanRow {
   image_url?: string;
   operator?: { full_name: string | null } | null;
   subject?: { full_name: string | null } | null;
+  // clinician review (migration 0012)
+  review_status?: "confirmed" | "modified" | null;
+  reviewed_label?: string | null;
+  referred?: boolean | null;
+  reviewed_at?: string | null;
 }
 
 /** Clinical status from the latest prediction (backend services/clinical). */
