@@ -12,6 +12,12 @@ interface NotificationsResponse {
   unread: number;
 }
 
+// several components use the hook at once (the shell's bell, the home
+// page): each needs its own Realtime channel, and a mark-as-read in one
+// must refresh the others
+const CHANGED = "diabai:notifications-changed";
+let instances = 0;
+
 /** In-app notifications with live updates: initial fetch + Supabase
  * Realtime INSERT subscription (RLS-filtered to the current user) + a
  * 60s refetch as a fallback if Realtime is unavailable. */
@@ -20,6 +26,7 @@ export function useNotifications(userId: string | undefined) {
   const [unread, setUnread] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const refetch = useRef<() => void>(() => {});
+  const [instance] = useState(() => ++instances);
 
   useEffect(() => {
     if (!userId) return;
@@ -40,10 +47,12 @@ export function useNotifications(userId: string | undefined) {
     }
     refetch.current = () => void load();
     void load();
+    const onChanged = () => void load();
+    window.addEventListener(CHANGED, onChanged);
 
     // live INSERTs for this user
     channel = supabase
-      .channel(`notifications-${userId}`)
+      .channel(`notifications-${userId}-${instance}`)
       .on(
         "postgres_changes",
         {
@@ -66,9 +75,10 @@ export function useNotifications(userId: string | undefined) {
     return () => {
       cancelled = true;
       clearInterval(interval);
+      window.removeEventListener(CHANGED, onChanged);
       if (channel) supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, instance]);
 
   const markRead = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -80,6 +90,7 @@ export function useNotifications(userId: string | undefined) {
       prev.map((n) => (ids.includes(n.id) ? { ...n, read: true } : n))
     );
     setUnread((u) => Math.max(0, u - ids.length));
+    window.dispatchEvent(new Event(CHANGED));
   }, []);
 
   const markAllRead = useCallback(async () => {
@@ -89,6 +100,7 @@ export function useNotifications(userId: string | undefined) {
     });
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnread(0);
+    window.dispatchEvent(new Event(CHANGED));
   }, []);
 
   return { notifications, unread, loaded, markRead, markAllRead };

@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Camera, CircleAlert, History, ShieldCheck } from "lucide-react";
+import { Camera, Check, CircleAlert, History, ShieldCheck } from "lucide-react";
 
 import ScanUploader from "@/components/ScanUploader";
+import { useModelAvailability } from "@/hooks/useModelAvailability";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { shortDate } from "@/lib/patient";
+import { TONE_BADGE, confidencePct, scanLabel, scanTone } from "@/lib/scans";
 import type { ScanRow } from "@/lib/types";
 
 const card = "flex flex-col gap-4 rounded-2xl border border-pt-border bg-white p-5";
@@ -16,7 +18,8 @@ const card = "flex flex-col gap-4 rounded-2xl border border-pt-border bg-white p
  *  not installed on the server the page says so instead of failing. */
 export default function PhotoCheck({ type }: { type: "foot" | "neck" }) {
   const { t, lang } = useI18n();
-  const [available, setAvailable] = useState<boolean | null>(null);
+  const models = useModelAvailability();
+  const available = models ? Boolean(models[type]) : null;
   const [past, setPast] = useState<ScanRow[]>([]);
 
   const loadPast = useCallback(() => {
@@ -26,11 +29,8 @@ export default function PhotoCheck({ type }: { type: "foot" | "neck" }) {
   }, [type]);
 
   useEffect(() => {
-    api<{ models: Record<string, boolean> }>("/api/health")
-      .then((r) => setAvailable(Boolean(r.models?.[type])))
-      .catch(() => setAvailable(null));
     loadPast();
-  }, [type, loadPast]);
+  }, [loadPast]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,9 +50,7 @@ export default function PhotoCheck({ type }: { type: "foot" | "neck" }) {
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border border-pt-border bg-white p-1">
-              <ScanUploader scanType={type} onDone={loadPast} />
-            </div>
+            <ScanUploader scanType={type} onDone={loadPast} />
           )}
 
           <div className={card}>
@@ -71,10 +69,21 @@ export default function PhotoCheck({ type }: { type: "foot" | "neck" }) {
                 ) : (
                   <span className="size-14 shrink-0 rounded-lg bg-pt-border" />
                 )}
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <p className="text-sm font-bold text-pt-ink">{s.result?.label ?? "—"}</p>
-                  {s.result?.confidence != null && (
-                    <p className="text-xs text-pt-muted">{t("pt.check.confidence", { n: (s.result.confidence * 100).toFixed(0) })}</p>
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className={`w-fit rounded-md border px-2 py-0.5 text-xs font-bold ${TONE_BADGE[scanTone(s.result?.label)]}`}>
+                    {scanLabel(t, s.result?.label)}
+                  </span>
+                  {confidencePct(s.result?.confidence) && (
+                    <p className="text-xs text-pt-muted">{t("pt.check.confidence", { n: (s.result!.confidence! * 100).toFixed(0) })}</p>
+                  )}
+                  {s.review_status && (
+                    // the doctor's reading of this photo
+                    <p className="flex items-center gap-1 text-xs font-semibold text-status-normal">
+                      <Check size={13} />
+                      {s.review_status === "modified"
+                        ? t("pt.check.reviewedAs", { label: scanLabel(t, s.reviewed_label) })
+                        : t("pt.check.reviewed")}
+                    </p>
                   )}
                 </div>
                 <span className="shrink-0 text-xs text-pt-muted">{shortDate(s.created_at, lang)}</span>

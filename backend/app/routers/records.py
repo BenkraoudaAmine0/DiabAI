@@ -120,13 +120,20 @@ def my_records(user: AuthUser = Depends(get_current_user)) -> dict:
                 .order("created_at", desc=True)
                 .execute()
             )
-        scans = (
-            svc.table("scans")
-            .select("id, storage_path, scan_type, result, created_at")
-            .or_(f"patient_id.eq.{user.id},user_id.eq.{user.id}")
-            .order("created_at", desc=True)
-            .execute()
-        )
+        def own_scans(columns: str):
+            return (
+                svc.table("scans")
+                .select(columns)
+                .or_(f"patient_id.eq.{user.id},user_id.eq.{user.id}")
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+        base = "id, storage_path, scan_type, result, created_at"
+        try:  # with the doctor's review of each photo (migration 0012)
+            scans = own_scans(base + ", review_status, reviewed_label, reviewed_at")
+        except Exception:
+            scans = own_scans(base)
     else:  # doctor: records they created themselves
         preds = (
             svc.table("predictions")

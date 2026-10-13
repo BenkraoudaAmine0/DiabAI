@@ -12,6 +12,7 @@ import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { age as ageOf, clinicalStatusOf, initials, shortId } from "@/lib/clinical";
 import { tierKey } from "@/lib/prediction";
+import { scanLabel } from "@/lib/scans";
 import type {
   BloodGroup,
   ClinicalStatus,
@@ -208,9 +209,10 @@ export default function PatientDetailPage({
       key: `s-${s.id}`,
       at: s.created_at,
       title: t(`pp.ev.${s.scan_type}`),
-      text: s.result?.label ?? "—",
+      text: scanLabel(t, s.result?.label),
       status: undefined,
-      href: undefined,
+      // foot / neck photos (also the patient's own) are reviewed there
+      href: s.scan_type === "eye" ? undefined : `/doctor/scans?patient=${id}&type=${s.scan_type}`,
     })),
     ...(clinical?.vitals ?? []).map((v) => ({
       key: `v-${v.id}`,
@@ -391,6 +393,9 @@ export default function PatientDetailPage({
                 <Link href="/doctor/retina" className="rounded-md bg-brand-teal p-3 text-center text-[13px] font-semibold text-white hover:opacity-90">
                   {t("pp.btnM4")}
                 </Link>
+                <Link href={`/doctor/scans?patient=${patient.id}`} className="rounded-md bg-white p-3 text-center text-[13px] font-semibold text-brand hover:bg-slate-50">
+                  {t("pp.btnScans")}
+                </Link>
                 <Link href="/doctor/type-classification" className="rounded-md bg-slate-900 p-3 text-center text-[13px] font-semibold text-white hover:opacity-90">
                   {t("pp.btnM2")}
                 </Link>
@@ -435,7 +440,7 @@ export default function PatientDetailPage({
             {eyeScans.map((s) => (
               <div key={s.id} className={card}>
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-base font-bold text-slate-900">{s.result?.label ?? "—"}</p>
+                  <p className="text-base font-bold text-slate-900">{scanLabel(t, s.result?.label)}</p>
                   {s.result?.referable_dr != null && (
                     <span className={`rounded-md px-2.5 py-1 text-[11px] font-bold ${s.result.referable_dr ? "bg-[#fee2e2] text-status-critical" : "bg-[#dcfce7] text-status-normal"}`}>
                       {s.result.referable_dr ? t("act.referable") : t("pp.notReferable")}

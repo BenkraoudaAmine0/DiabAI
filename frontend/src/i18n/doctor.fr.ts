@@ -484,6 +484,9 @@ const drFr: Record<string, string> = {
   "auth.mfaOther": "Utiliser un autre compte",
   "ds.mfaRequired": "Votre établissement exige la double authentification pour votre rôle : activez-la ci-dessous pour continuer.",
   "diabetes.running": "Évaluation en cours…",
+  "dr.nav.section": "Espace clinique",
+  "dr.bell": "Évaluations à valider : {n}",
+  "pp.btnScans": "Photo pied & cou",
 };
 
 export default drFr;

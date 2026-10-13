@@ -10,6 +10,7 @@ import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { clinicalStatusOf } from "@/lib/clinical";
 import { shortDate } from "@/lib/patient";
+import { scanLabel } from "@/lib/scans";
 import type { ClinicalStatus, PatientVitals, PredictionRow, ScanRow } from "@/lib/types";
 
 interface MeProfile {
@@ -96,7 +97,7 @@ export default function PatientResultsPage() {
         title: t(`pt.res.ev.${s.scan_type}`),
         text:
           s.result?.label != null
-            ? `${s.result.label}${s.result.confidence != null ? ` (${(s.result.confidence * 100).toFixed(0)} %)` : ""}`
+            ? `${scanLabel(t, s.result.label)}${s.result.confidence != null ? ` (${(s.result.confidence * 100).toFixed(0)} %)` : ""}`
             : "—",
       })),
       ...vitals.map((v) => ({

@@ -201,6 +201,10 @@ const ptFr: Record<string, string> = {
   "pt.set.careTeamText": "Les médecins qui vous suivent sur DiabAI.",
   "pt.check.foot.disclaimer": "Ceci est une aide au dépistage, pas un diagnostic. Montrez le résultat à votre médecin, et consultez rapidement si une plaie est douloureuse, rouge, gonflée ou ne guérit pas.",
   "pt.check.neck.disclaimer": "Ceci est une aide au dépistage, pas un diagnostic. Une peau du cou foncée, épaissie ou veloutée mérite d’être montrée à votre médecin, qui pourra vérifier votre glycémie.",
+  "pt.nav.section": "Ma santé",
+  "pt.bell": "Notifications non lues : {n}",
+  "pt.check.reviewed": "Vérifié par votre médecin",
+  "pt.check.reviewedAs": "Lecture de votre médecin : {label}",
 };
 
 export default ptFr;

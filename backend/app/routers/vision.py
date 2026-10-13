@@ -53,6 +53,11 @@ async def scan(
         result = vision_service.predict(scan_type, image_bytes)
     except vision_service.VisionModelNotInstalled as exc:
         raise HTTPException(status_code=503, detail=str(exc))
+    except ValueError as exc:  # not decodable (e.g. HEIC from a phone)
+        raise HTTPException(
+            status_code=400,
+            detail="This image could not be read. Please upload a JPG or PNG photo.",
+        ) from exc
     except RuntimeError as exc:  # loader issue (missing TF/torch, bad export…)
         raise HTTPException(status_code=503, detail=str(exc))
     except Exception as exc:
