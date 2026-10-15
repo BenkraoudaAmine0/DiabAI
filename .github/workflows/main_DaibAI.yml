@@ -1,0 +1,31 @@
+name: Deploy backend to Azure Web App - DaibAI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_XXXXXXXX }}          # <- your secret name
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_XXXXXXXX }}          # <- your secret name
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_XXXXXXXX }}  # <- your secret name
+
+      - name: Deploy backend folder
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'DaibAI'
+          package: backend
