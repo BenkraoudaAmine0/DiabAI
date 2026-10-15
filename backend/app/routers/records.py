@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth import AuthUser, get_current_user
 from app.services.clinical import clinical_status
-from app.services.supabase_client import get_service_client, signed_url
+from app.services.supabase_client import execute, get_service_client, signed_url
 
 router = APIRouter()
 
@@ -20,9 +20,11 @@ def _my_vitals(svc, user_id: str, limit: int) -> list[dict] | None:
     0012). RLS would allow this read too; the backend uses the service role."""
     try:
         return (
-            svc.table("patient_vitals").select(VITAL_COLUMNS)
-            .eq("patient_id", user_id)
-            .order("measured_at", desc=True).limit(limit).execute().data or []
+            execute(
+                lambda: svc.table("patient_vitals").select(VITAL_COLUMNS)
+                .eq("patient_id", user_id)
+                .order("measured_at", desc=True).limit(limit).execute()
+            ).data or []
         )
     except Exception:
         return None
@@ -42,31 +44,40 @@ def my_summary(user: AuthUser = Depends(get_current_user)) -> dict:
     columns = "id, created_at, probability, prediction, risk_tier"
     try:
         preds = (
-            svc.table("predictions").select(columns)
-            .eq("patient_id", user.id).eq("status", "confirmed")
-            .order("created_at", desc=True).limit(1).execute().data or []
+            execute(
+                lambda: svc.table("predictions").select(columns)
+                .eq("patient_id", user.id).eq("status", "confirmed")
+                .order("created_at", desc=True).limit(1).execute()
+            ).data or []
         )
     except Exception:  # before migration 0007 there is no review status
         preds = (
-            svc.table("predictions").select(columns)
-            .eq("patient_id", user.id)
-            .order("created_at", desc=True).limit(1).execute().data or []
+            execute(
+                lambda: svc.table("predictions").select(columns)
+                .eq("patient_id", user.id)
+                .order("created_at", desc=True).limit(1).execute()
+            ).data or []
         )
     scans = (
-        svc.table("scans").select("created_at")
-        .or_(f"patient_id.eq.{user.id},user_id.eq.{user.id}")
-        .order("created_at", desc=True).limit(1).execute().data or []
+        execute(
+            lambda: svc.table("scans").select("created_at")
+            .or_(f"patient_id.eq.{user.id},user_id.eq.{user.id}")
+            .order("created_at", desc=True).limit(1).execute()
+        ).data or []
     )
     profile = (
-        svc.table("profiles").select("*").eq("id", user.id).limit(1).execute().data
+        execute(
+            lambda: svc.table("profiles").select("*").eq("id", user.id).limit(1).execute()
+        ).data
         or [{}]
     )[0]
     links = (
-        svc.table("doctor_patients")
-        .select("profiles!doctor_patients_doctor_id_fkey(id, full_name, email, phone)")
-        .eq("patient_id", user.id)
-        .execute()
-        .data
+        execute(
+            lambda: svc.table("doctor_patients")
+            .select("profiles!doctor_patients_doctor_id_fkey(id, full_name, email, phone)")
+            .eq("patient_id", user.id)
+            .execute()
+        ).data
         or []
     )
     doctors = [
@@ -111,18 +122,18 @@ def my_records(user: AuthUser = Depends(get_current_user)) -> dict:
             .order("created_at", desc=True)
         )
         try:
-            preds = query.eq("status", "confirmed").execute()
+            preds = execute(lambda: query.eq("status", "confirmed").execute())
         except Exception:
-            preds = (
-                svc.table("predictions")
+            preds = execute(
+                lambda: svc.table("predictions")
                 .select("*, doctor:profiles!predictions_doctor_id_fkey(full_name)")
                 .eq("patient_id", user.id)
                 .order("created_at", desc=True)
                 .execute()
             )
         def own_scans(columns: str):
-            return (
-                svc.table("scans")
+            return execute(
+                lambda: svc.table("scans")
                 .select(columns)
                 .or_(f"patient_id.eq.{user.id},user_id.eq.{user.id}")
                 .order("created_at", desc=True)
@@ -135,15 +146,15 @@ def my_records(user: AuthUser = Depends(get_current_user)) -> dict:
         except Exception:
             scans = own_scans(base)
     else:  # doctor: records they created themselves
-        preds = (
-            svc.table("predictions")
+        preds = execute(
+            lambda: svc.table("predictions")
             .select("*, patient:profiles!predictions_patient_id_fkey(full_name)")
             .eq("doctor_id", user.id)
             .order("created_at", desc=True)
             .execute()
         )
-        scans = (
-            svc.table("scans")
+        scans = execute(
+            lambda: svc.table("scans")
             .select("*, subject:profiles!scans_patient_id_fkey(full_name)")
             .eq("user_id", user.id)
             .order("created_at", desc=True)

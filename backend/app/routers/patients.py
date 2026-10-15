@@ -30,6 +30,7 @@ from app.services.panel import (
     scans_of,
 )
 from app.services.supabase_client import (
+    execute,
     get_anon_client,
     get_service_client,
     signed_url,
@@ -68,12 +69,13 @@ def _duplicate_response(svc, email: str, doctor_id: str) -> HTTPException:
     with the existing account."""
     try:
         rows = (
-            svc.table("profiles")
-            .select("id, role")
-            .eq("email", email)
-            .limit(1)
-            .execute()
-            .data
+            execute(
+                lambda: svc.table("profiles")
+                .select("id, role")
+                .eq("email", email)
+                .limit(1)
+                .execute()
+            ).data
             or []
         )
     except Exception:
@@ -271,8 +273,8 @@ def link_patient(
     req: LinkPatientRequest, user: AuthUser = Depends(require_doctor)
 ) -> dict:
     """Add an existing (self-registered) patient to the doctor's panel."""
-    res = (
-        get_service_client()
+    res = execute(
+        lambda: get_service_client()
         .table("profiles")
         .select("id, email, full_name, role")
         .eq("email", req.email)
@@ -467,14 +469,28 @@ def patient_clinical(
     identifiers = {k: profile.get(k) for k in ("cnas_number", "chifa_number", "blood_group")}
     try:
         vitals = (
-            svc.table("patient_vitals").select("*").eq("patient_id", pid)
-            .order("measured_at", desc=True).limit(100).execute().data or []
+            execute(
+                lambda: svc.table("patient_vitals")
+                .select("*")
+                .eq("patient_id", pid)
+                .order("measured_at", desc=True)
+                .limit(100)
+                .execute()
+            ).data
+            or []
         )
         notes = (
-            svc.table("consultation_notes")
-            .select("id, body, created_at, doctor:profiles!consultation_notes_doctor_id_fkey(full_name)")
-            .eq("patient_id", pid)
-            .order("created_at", desc=True).limit(100).execute().data or []
+            execute(
+                lambda: svc.table("consultation_notes")
+                .select(
+                    "id, body, created_at, doctor:profiles!consultation_notes_doctor_id_fkey(full_name)"
+                )
+                .eq("patient_id", pid)
+                .order("created_at", desc=True)
+                .limit(100)
+                .execute()
+            ).data
+            or []
         )
         ready = True
     except Exception as exc:
@@ -562,8 +578,8 @@ def patient_records(
     profile = get_profile(pid)
 
     svc = get_service_client()
-    preds = (
-        svc.table("predictions")
+    preds = execute(
+        lambda: svc.table("predictions")
         .select(
             "*, doctor:profiles!predictions_doctor_id_fkey(full_name)"
         )
@@ -571,8 +587,8 @@ def patient_records(
         .order("created_at", desc=True)
         .execute()
     )
-    scans = (
-        svc.table("scans")
+    scans = execute(
+        lambda: svc.table("scans")
         .select("*, operator:profiles!scans_user_id_fkey(full_name)")
         .eq("patient_id", pid)
         .order("created_at", desc=True)

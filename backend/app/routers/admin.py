@@ -16,7 +16,7 @@ from app.config import get_settings
 from app.services.audit_service import audit_by
 from app.services.clinical import clinical_status, parse_ts, urgent_reason
 from app.services.panel import predictions_of, scans_of
-from app.services.supabase_client import get_service_client
+from app.services.supabase_client import execute, get_service_client
 
 router = APIRouter()
 
@@ -25,8 +25,8 @@ FOREVER = "876000h"  # Supabase Auth ban length for a suspension (~100 years)
 
 
 def _count(svc, role: str) -> int:
-    res = (
-        svc.table("profiles")
+    res = execute(
+        lambda: svc.table("profiles")
         .select("id", count="exact")
         .eq("role", role)
         .limit(1)
@@ -88,14 +88,15 @@ def admin_stats(user: AuthUser = Depends(require_admin)) -> dict:
     }
 
     usage_rows = (
-        svc.table("gemini_usage")
-        .select(
-            "kind, model, input_tokens, output_tokens, estimated_cost_usd, created_at"
-        )
-        .order("created_at", desc=True)
-        .limit(20000)
-        .execute()
-        .data
+        execute(
+            lambda: svc.table("gemini_usage")
+            .select(
+                "kind, model, input_tokens, output_tokens, estimated_cost_usd, created_at"
+            )
+            .order("created_at", desc=True)
+            .limit(20000)
+            .execute()
+        ).data
         or []
     )
     generate_rows = [r for r in usage_rows if r.get("kind") == "generate"]
@@ -158,7 +159,7 @@ def _profiles(svc, role: Optional[str] = None, columns: str = "id, email, full_n
     query = svc.table("profiles").select(columns).order("created_at", desc=True).limit(5000)
     if role:
         query = query.eq("role", role)
-    return query.execute().data or []
+    return execute(lambda: query.execute()).data or []
 
 
 @router.get("/users")
@@ -178,12 +179,12 @@ def admin_users(
         p["id"]: {"predictions_made": 0, "predictions_received": 0, "scans_performed": 0, "scans_received": 0}
         for p in profiles
     }
-    for r in svc.table("predictions").select("doctor_id, patient_id").limit(100000).execute().data or []:
+    for r in execute(lambda: svc.table("predictions").select("doctor_id, patient_id").limit(100000).execute()).data or []:
         if r.get("doctor_id") in counts:
             counts[r["doctor_id"]]["predictions_made"] += 1
         if r.get("patient_id") in counts:
             counts[r["patient_id"]]["predictions_received"] += 1
-    for r in svc.table("scans").select("user_id, patient_id").limit(100000).execute().data or []:
+    for r in execute(lambda: svc.table("scans").select("user_id, patient_id").limit(100000).execute()).data or []:
         if r.get("user_id") in counts:
             counts[r["user_id"]]["scans_performed"] += 1
         if r.get("patient_id") in counts:
@@ -254,7 +255,7 @@ def change_role(user_id: UUID, req: RoleRequest, user: AuthUser = Depends(requir
     if uid == user.id:
         raise HTTPException(status_code=400, detail="You cannot change your own role.")
     svc = get_service_client()
-    rows = svc.table("profiles").select("role, email").eq("id", uid).limit(1).execute().data
+    rows = execute(lambda: svc.table("profiles").select("role, email").eq("id", uid).limit(1).execute()).data
     if not rows:
         raise HTTPException(status_code=404, detail="User not found")
     before = rows[0]["role"]
@@ -288,7 +289,7 @@ def change_status(user_id: UUID, req: StatusRequest, user: AuthUser = Depends(re
 # ── doctors ──────────────────────────────────────────────────────────────────
 
 def _panel_sizes(svc) -> Counter:
-    links = svc.table("doctor_patients").select("doctor_id").limit(100000).execute().data or []
+    links = execute(lambda: svc.table("doctor_patients").select("doctor_id").limit(100000).execute()).data or []
     return Counter(link["doctor_id"] for link in links)
 
 
@@ -335,7 +336,7 @@ def verify_doctor(doctor_id: UUID, req: VerifyRequest, user: AuthUser = Depends(
     council register) — a manual admin decision, recorded in the audit log."""
     did = str(doctor_id)
     svc = get_service_client()
-    rows = svc.table("profiles").select("role").eq("id", did).limit(1).execute().data
+    rows = execute(lambda: svc.table("profiles").select("role").eq("id", did).limit(1).execute()).data
     if not rows or rows[0]["role"] != "doctor":
         raise HTTPException(status_code=404, detail="Doctor not found")
     now = datetime.now(timezone.utc).isoformat()
@@ -369,7 +370,7 @@ def _doctor_label(full_name: Optional[str]) -> str:
 def patient_directory(svc) -> list[dict]:
     patients = _profiles(svc, "patient")
     ids = [p["id"] for p in patients]
-    links = svc.table("doctor_patients").select("doctor_id, patient_id").limit(100000).execute().data or []
+    links = execute(lambda: svc.table("doctor_patients").select("doctor_id, patient_id").limit(100000).execute()).data or []
     doctors = {d["id"]: d for d in _profiles(svc, "doctor", "id, full_name")}
     team: dict[str, list[str]] = {}
     for link in links:
@@ -448,8 +449,10 @@ def admin_overview(user: AuthUser = Depends(require_admin)) -> dict:
     patients = [p for p in profiles if p["role"] == "patient"]
     try:
         verified = (
-            svc.table("profiles").select("id", count="exact").eq("role", "doctor")
-            .not_.is_("verified_at", "null").limit(1).execute().count or 0
+            execute(
+                lambda: svc.table("profiles").select("id", count="exact").eq("role", "doctor")
+                .not_.is_("verified_at", "null").limit(1).execute()
+            ).count or 0
         )
     except Exception:
         verified = None

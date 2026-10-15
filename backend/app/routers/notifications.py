@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.auth import AuthUser, get_current_user
-from app.services.supabase_client import get_service_client
+from app.services.supabase_client import execute, get_service_client
 
 router = APIRouter()
 
@@ -20,13 +20,14 @@ class MarkReadRequest(BaseModel):
 def list_notifications(user: AuthUser = Depends(get_current_user)) -> dict:
     svc = get_service_client()
     rows = (
-        svc.table("notifications")
-        .select("id, kind, data, link, read, created_at, actor_id")
-        .eq("user_id", user.id)
-        .order("created_at", desc=True)
-        .limit(50)
-        .execute()
-        .data
+        execute(
+            lambda: svc.table("notifications")
+            .select("id, kind, data, link, read, created_at, actor_id")
+            .eq("user_id", user.id)
+            .order("created_at", desc=True)
+            .limit(50)
+            .execute()
+        ).data
         or []
     )
     unread = sum(1 for r in rows if not r["read"])

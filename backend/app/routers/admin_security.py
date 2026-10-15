@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from app.auth import AuthUser, forget_mfa_policy, require_admin
 from app.services.audit_service import audit_by, category
 from app.services.clinical import parse_ts
-from app.services.supabase_client import get_service_client
+from app.services.supabase_client import execute, get_service_client
 
 router = APIRouter()
 
@@ -47,7 +47,7 @@ def _target_labels(svc, rows: list[dict]) -> dict[str, str]:
     labels: dict[str, str] = {}
     if ids:
         try:
-            people = svc.table("profiles").select("id, role, full_name").in_("id", list(ids)).execute().data or []
+            people = execute(lambda: svc.table("profiles").select("id, role, full_name").in_("id", list(ids)).execute()).data or []
         except Exception:
             people = []
         for p in people:
@@ -87,7 +87,7 @@ def _shape(rows: list[dict], labels: dict[str, str]) -> list[dict]:
 
 def recent_audit(svc, limit: int = 4) -> list[dict]:
     try:
-        rows = svc.table("audit_log").select(AUDIT_COLUMNS).order("chain_seq", desc=True).limit(limit).execute().data or []
+        rows = execute(lambda: svc.table("audit_log").select(AUDIT_COLUMNS).order("chain_seq", desc=True).limit(limit).execute()).data or []
     except Exception:
         return []
     return _shape(rows, _target_labels(svc, rows))
@@ -100,7 +100,7 @@ def _audit_rows(svc, period: str, actor: Optional[str], limit: int) -> list[dict
         query = query.gte("created_at", since)
     if actor:
         query = query.eq("actor_id", actor)
-    return query.execute().data or []
+    return execute(lambda: query.execute()).data or []
 
 
 def _matches(row: dict, cat: Optional[str], q: str) -> bool:
@@ -126,8 +126,10 @@ def audit_log(
     try:
         rows = _audit_rows(svc, period, str(actor) if actor else None, 2000)
         today = (
-            svc.table("audit_log").select("action").gte("created_at", _since("today"))
-            .limit(20000).execute().data or []
+            execute(
+                lambda: svc.table("audit_log").select("action").gte("created_at", _since("today"))
+                .limit(20000).execute()
+            ).data or []
         )
     except Exception as exc:
         if _missing_0013(exc):
@@ -204,8 +206,10 @@ ALERT_COLUMNS = "id, level, status, source, message, detail, created_at, resolve
 def open_alerts(svc) -> dict:
     try:
         rows = (
-            svc.table("app_errors").select(ALERT_COLUMNS).neq("status", "resolved")
-            .order("created_at", desc=True).limit(500).execute().data or []
+            execute(
+                lambda: svc.table("app_errors").select(ALERT_COLUMNS).neq("status", "resolved")
+                .order("created_at", desc=True).limit(500).execute()
+            ).data or []
         )
     except Exception:
         return {"open": 0, "critical": 0, "latest": []}
@@ -236,14 +240,18 @@ def alerts(
             query = query.eq("status", status)
         if level:
             query = query.eq("level", level)
-        rows = query.execute().data or []
+        rows = execute(lambda: query.execute()).data or []
         month = (
-            svc.table("app_errors").select("level, status, created_at, resolved_at")
-            .gte("created_at", _since("30d")).limit(1000).execute().data or []
+            execute(
+                lambda: svc.table("app_errors").select("level, status, created_at, resolved_at")
+                .gte("created_at", _since("30d")).limit(1000).execute()
+            ).data or []
         )
         unresolved = (
-            svc.table("app_errors").select("level, status").neq("status", "resolved")
-            .limit(1000).execute().data or []
+            execute(
+                lambda: svc.table("app_errors").select("level, status").neq("status", "resolved")
+                .limit(1000).execute()
+            ).data or []
         )
     except Exception as exc:
         if _missing_0013(exc):
@@ -316,7 +324,7 @@ def review_alerts(req: AlertIds, user: AuthUser = Depends(require_admin)) -> dic
 
 def _setting(svc, key: str, default=None):
     try:
-        rows = svc.table("app_settings").select("value").eq("key", key).limit(1).execute().data
+        rows = execute(lambda: svc.table("app_settings").select("value").eq("key", key).limit(1).execute()).data
     except Exception:
         return default
     return rows[0]["value"] if rows else default
@@ -334,15 +342,19 @@ def security(user: AuthUser = Depends(require_admin)) -> dict:
         accounts = {}
     try:
         unverified = (
-            svc.table("profiles").select("id", count="exact").eq("role", "doctor")
-            .is_("verified_at", "null").limit(1).execute().count or 0
+            execute(
+                lambda: svc.table("profiles").select("id", count="exact").eq("role", "doctor")
+                .is_("verified_at", "null").limit(1).execute()
+            ).count or 0
         )
     except Exception:
         unverified = None
     try:
         pending_deletions = (
-            svc.table("deletion_requests").select("id", count="exact").eq("status", "pending")
-            .limit(1).execute().count or 0
+            execute(
+                lambda: svc.table("deletion_requests").select("id", count="exact").eq("status", "pending")
+                .limit(1).execute()
+            ).count or 0
         )
     except Exception:
         pending_deletions = None
@@ -433,8 +445,10 @@ def deletion_requests(user: AuthUser = Depends(require_admin)) -> dict:
     svc = get_service_client()
     try:
         rows = (
-            svc.table("deletion_requests").select("id, user_id, reason, status, created_at, handled_at")
-            .order("created_at", desc=True).limit(200).execute().data or []
+            execute(
+                lambda: svc.table("deletion_requests").select("id, user_id, reason, status, created_at, handled_at")
+                .order("created_at", desc=True).limit(200).execute()
+            ).data or []
         )
     except Exception as exc:
         if _missing_0013(exc):
@@ -444,8 +458,10 @@ def deletion_requests(user: AuthUser = Depends(require_admin)) -> dict:
     people = {}
     if ids:
         people = {
-            p["id"]: p for p in svc.table("profiles").select("id, email, full_name, role")
-            .in_("id", ids).execute().data or []
+            p["id"]: p for p in execute(
+                lambda: svc.table("profiles").select("id, email, full_name, role")
+                .in_("id", ids).execute()
+            ).data or []
         }
     return {"requests": [dict(r, user=people.get(r["user_id"])) for r in rows]}
 

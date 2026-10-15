@@ -4,13 +4,13 @@ from typing import Iterable
 
 from fastapi import HTTPException
 
-from app.services.supabase_client import get_service_client
+from app.services.supabase_client import execute, get_service_client
 
 
 def get_profile(user_id: str) -> dict:
     try:
-        res = (
-            get_service_client()
+        res = execute(
+            lambda: get_service_client()
             .table("profiles")
             .select("*")
             .eq("id", user_id)
@@ -36,8 +36,8 @@ def ensure_panel_link(doctor_id: str, patient_id: str) -> None:
 
 
 def has_panel_link(doctor_id: str, patient_id: str) -> bool:
-    res = (
-        get_service_client()
+    res = execute(
+        lambda: get_service_client()
         .table("doctor_patients")
         .select("doctor_id")
         .eq("doctor_id", doctor_id)
@@ -58,14 +58,15 @@ ROW_LIMIT = 1000
 def panel(svc, doctor_id: str) -> tuple[list[dict], dict[str, dict]]:
     """(links, {patient_id: profile}) of the doctor's panel."""
     links = (
-        svc.table("doctor_patients")
-        .select(
-            "patient_id, created_at, "
-            "profiles!doctor_patients_patient_id_fkey(id, full_name, email, phone, dob, sex)"
-        )
-        .eq("doctor_id", doctor_id)
-        .execute()
-        .data
+        execute(
+            lambda: svc.table("doctor_patients")
+            .select(
+                "patient_id, created_at, "
+                "profiles!doctor_patients_patient_id_fkey(id, full_name, email, phone, dob, sex)"
+            )
+            .eq("doctor_id", doctor_id)
+            .execute()
+        ).data
         or []
     )
     patients = {
@@ -90,9 +91,9 @@ def predictions_of(svc, ids: list[str], columns: str = PRED_COLUMNS) -> list[dic
             .order("created_at", desc=True).limit(ROW_LIMIT)
         )
         try:
-            rows += query(columns + ", status").execute().data or []
+            rows += execute(lambda: query(columns + ", status").execute()).data or []
         except Exception:  # before 0007: no status column
-            rows += query(columns).execute().data or []
+            rows += execute(lambda: query(columns).execute()).data or []
     return sorted(rows, key=lambda r: r.get("created_at") or "", reverse=True)
 
 
@@ -100,8 +101,14 @@ def scans_of(svc, ids: list[str]) -> list[dict]:
     rows: list[dict] = []
     for part in _chunks(ids):
         rows += (
-            svc.table("scans").select(SCAN_COLUMNS).in_("patient_id", part)
-            .order("created_at", desc=True).limit(ROW_LIMIT).execute().data
+            execute(
+                lambda: svc.table("scans")
+                .select(SCAN_COLUMNS)
+                .in_("patient_id", part)
+                .order("created_at", desc=True)
+                .limit(ROW_LIMIT)
+                .execute()
+            ).data
             or []
         )
     return sorted(rows, key=lambda r: r.get("created_at") or "", reverse=True)
