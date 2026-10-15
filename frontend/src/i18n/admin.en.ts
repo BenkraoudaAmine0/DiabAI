@@ -357,6 +357,15 @@ const adminEn: Record<string, string> = {
   "adm.kb.subtitle": "Documents and books the AI assistant answers from, with storage and Gemini usage.",
   "adm.kb.usage": "Gemini usage & estimated cost",
   "adm.kb.lastCall": "Last call {time}",
+  "adm.al.details": "Show details",
+  "adm.al.hide": "Hide details",
+  "adm.al.source": "Source",
+  "adm.al.firstSeen": "First seen",
+  "adm.al.lastSeenAt": "Last seen",
+  "adm.al.count": "Occurrences",
+  "adm.al.httpStatus": "HTTP status",
+  "adm.al.user": "Affected user",
+  "adm.al.resolvedAt": "Resolved",
 };
 
 export default adminEn;

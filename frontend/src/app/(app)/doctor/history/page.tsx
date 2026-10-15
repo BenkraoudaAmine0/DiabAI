@@ -297,7 +297,9 @@ export default function DoctorHistoryPage() {
             </div>
             <div className="h-px bg-slate-200" />
             <div className="flex flex-col gap-3 rounded-lg bg-slate-50 p-4">
-              <p className="text-[15px] font-bold text-slate-900">{selected.patient_name}</p>
+              <Link href={`/doctor/patients/${selected.patient_id}`} className="text-[15px] font-bold text-slate-900 hover:text-brand hover:underline">
+                {selected.patient_name}
+              </Link>
               <p className="text-xs text-slate-500">
                 {selected.age != null && `${t("common.ageShort", { n: selected.age })} • `}
                 {shortDay(selected.created_at, lang)}

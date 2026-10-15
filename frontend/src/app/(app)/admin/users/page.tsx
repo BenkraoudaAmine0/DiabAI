@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Clock3, Download, LockKeyhole, ShieldCheck, UserCheck, UserPlus, Users } from "lucide-react";
 
 import InviteDialog from "@/components/admin/InviteDialog";
@@ -76,11 +77,12 @@ function DeletionRequests({ onChange }: { onChange: () => void }) {
 }
 
 /** Figma 05 Admin Screens · User management (109:30213). */
-export default function AdminUsersPage() {
+function AdminUsersPageContent() {
   const { t, lang } = useI18n();
   const { profile } = useAuth();
   const { data, error, loading, reload } = useAdminApi<UsersResponse>("/api/admin/users");
-  const [q, setQ] = useState("");
+  const params = useSearchParams();
+  const [q, setQ] = useState(() => params.get("q") ?? ""); // ?q= from the audit log / alerts
   const [role, setRole] = useState<"all" | Role>("all");
   const [status, setStatus] = useState<"all" | AccountStatus>("all");
   const [inviting, setInviting] = useState(false);
@@ -248,3 +250,10 @@ export default function AdminUsersPage() {
   );
 }
 
+export default function AdminUsersPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminUsersPageContent />
+    </Suspense>
+  );
+}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCheck, CircleAlert, Ellipsis, SearchCheck, ShieldAlert, Timer } from "lucide-react";
+import Link from "next/link";
+import { CheckCheck, ChevronDown, CircleAlert, Ellipsis, SearchCheck, ShieldAlert, Timer } from "lucide-react";
 
 import { ALERT_STATUS_TONE, LEVEL_TONE } from "@/components/admin/labels";
 import {
@@ -19,7 +20,7 @@ import {
 } from "@/components/admin/ui";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
-import { type AlertLevel, type AlertRow, type AlertStatus, type AlertsResponse, timeAgo } from "@/lib/admin";
+import { type AlertLevel, type AlertRow, type AlertStatus, type AlertsResponse, personHref, timeAgo } from "@/lib/admin";
 
 type StatusFilter = "unresolved" | AlertStatus | "all";
 type Period = "today" | "7d" | "30d" | "all";
@@ -68,6 +69,52 @@ function RowMenu({ alert, onSet }: { alert: AlertRow; onSet: (s: AlertStatus) =>
   );
 }
 
+const HIDDEN_DETAIL = new Set(["count", "status", "last_seen"]);
+
+function fullTime(iso: string | null | undefined, lang: string): string {
+  return iso ? new Date(iso).toLocaleString(lang === "fr" ? "fr-FR" : "en-GB", { dateStyle: "medium", timeStyle: "short" }) : "—";
+}
+
+/** What an alert row expands to: when, how often, who hit it, raw detail. */
+function AlertDetails({ alert }: { alert: AlertRow }) {
+  const { t, lang } = useI18n();
+  const userHref = personHref(alert.user_role, alert.user_label);
+  const extra = Object.entries(alert.detail ?? {}).filter(([k]) => !HIDDEN_DETAIL.has(k));
+  const rows: [string, React.ReactNode][] = [
+    [t("adm.al.source"), <span key="s" className="break-all font-mono">{alert.source}</span>],
+    [t("adm.al.firstSeen"), fullTime(alert.created_at, lang)],
+    [t("adm.al.lastSeenAt"), fullTime(alert.detail?.last_seen ?? alert.created_at, lang)],
+    [t("adm.al.count"), String(alert.detail?.count ?? 1)],
+    [t("adm.al.httpStatus"), alert.detail?.status != null ? String(alert.detail.status) : "—"],
+    [
+      t("adm.al.user"),
+      alert.user_label ? (
+        userHref ? (
+          <Link key="u" href={userHref} className="font-semibold text-adm-blue hover:underline">
+            {alert.user_label}
+          </Link>
+        ) : (
+          alert.user_label
+        )
+      ) : (
+        "—"
+      ),
+    ],
+    ...(alert.resolved_at ? [[t("adm.al.resolvedAt"), fullTime(alert.resolved_at, lang)] as [string, React.ReactNode]] : []),
+    ...extra.map(([k, v]) => [k, <span key={k} className="break-all font-mono">{typeof v === "string" ? v : JSON.stringify(v)}</span>] as [string, React.ReactNode]),
+  ];
+  return (
+    <dl className="grid w-full grid-cols-1 gap-x-6 gap-y-2 rounded-[10px] bg-adm-soft p-4 text-xs sm:grid-cols-[160px_minmax(0,1fr)]">
+      {rows.map(([label, value]) => (
+        <div key={label} className="contents">
+          <dt className="font-semibold text-adm-muted">{label}</dt>
+          <dd className="min-w-0 text-adm-ink">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 /** Figma 05 Admin Screens · Error alerts (109:31584). Alerts are opened by
  *  the API itself (5xx answers, crashes, failed uploads); repeats of the
  *  same open error are counted on one alert. */
@@ -78,6 +125,7 @@ export default function AdminAlertsPage() {
   const [period, setPeriod] = useState<Period>("7d");
   const [q, setQ] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   const params = new URLSearchParams({ status, period });
   if (level !== "all") params.set("level", level);
@@ -173,23 +221,36 @@ export default function AdminAlertsPage() {
               <StateBox kind="empty" message={t("adm.al.none")} />
             </div>
           )}
-          {rows.map((a) => (
-            <div key={a.id} className="flex flex-wrap items-center gap-4 border-b border-adm-border px-[18px] py-4 last:border-b-0">
-              <span className={`h-11 w-1 shrink-0 rounded-full ${TONES[LEVEL_TONE[a.level]].bar}`} aria-hidden />
-              <span className={`w-16 shrink-0 text-xs font-bold ${TONES[LEVEL_TONE[a.level]].pill.split(" ")[1]}`}>{t(`adm.al.lv.${a.level}`)}</span>
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <p className="break-words text-[13px] font-semibold text-adm-ink">{a.message}</p>
-                <p className="text-[11px] text-adm-muted">
-                  <span className="font-mono">{a.source}</span>
-                  {a.detail?.count && a.detail.count > 1 ? ` · ${t("adm.al.times", { n: a.detail.count })}` : ""}
-                  {a.detail?.last_seen ? ` · ${t("adm.al.lastSeen", { time: timeAgo(a.detail.last_seen, lang) })}` : ""}
-                </p>
+          {rows.map((a) => {
+            const open = expanded === a.id;
+            return (
+              <div key={a.id} className="flex flex-wrap items-center gap-4 border-b border-adm-border px-[18px] py-4 last:border-b-0">
+                <span className={`h-11 w-1 shrink-0 rounded-full ${TONES[LEVEL_TONE[a.level]].bar}`} aria-hidden />
+                <span className={`w-16 shrink-0 text-xs font-bold ${TONES[LEVEL_TONE[a.level]].pill.split(" ")[1]}`}>{t(`adm.al.lv.${a.level}`)}</span>
+                <button
+                  type="button"
+                  onClick={() => setExpanded(open ? null : a.id)}
+                  aria-expanded={open}
+                  className="flex min-w-0 flex-1 items-start gap-2 rounded-lg text-left hover:bg-adm-soft"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="break-words text-[13px] font-semibold text-adm-ink">{a.message}</span>
+                    <span className="text-[11px] text-adm-muted">
+                      <span className="font-mono">{a.source}</span>
+                      {a.detail?.count && a.detail.count > 1 ? ` · ${t("adm.al.times", { n: a.detail.count })}` : ""}
+                      {a.detail?.last_seen ? ` · ${t("adm.al.lastSeen", { time: timeAgo(a.detail.last_seen, lang) })}` : ""}
+                      {a.user_label ? ` · ${a.user_label}` : ""}
+                    </span>
+                  </span>
+                  <ChevronDown size={16} className={`mt-0.5 shrink-0 text-adm-muted transition-transform ${open ? "rotate-180" : ""}`} aria-label={t(open ? "adm.al.hide" : "adm.al.details")} />
+                </button>
+                <span className="w-24 shrink-0 text-xs text-adm-muted">{timeAgo(a.created_at, lang)}</span>
+                <StatusPill tone={ALERT_STATUS_TONE[a.status]}>{t(`adm.al.st.${a.status}`)}</StatusPill>
+                <RowMenu alert={a} onSet={(next) => setAlert(a.id, next)} />
+                {open && <AlertDetails alert={a} />}
               </div>
-              <span className="w-24 shrink-0 text-xs text-adm-muted">{timeAgo(a.created_at, lang)}</span>
-              <StatusPill tone={ALERT_STATUS_TONE[a.status]}>{t(`adm.al.st.${a.status}`)}</StatusPill>
-              <RowMenu alert={a} onSet={(next) => setAlert(a.id, next)} />
-            </div>
-          ))}
+            );
+          })}
         </section>
       )}
     </>

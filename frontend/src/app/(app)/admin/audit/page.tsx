@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Eye, FileDown, FilePen, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
 
 import { actionLabel } from "@/components/admin/labels";
 import { Btn, FilterSelect, PageHeading, Panel, SearchInput, StateBox, card, useAdminApi } from "@/components/admin/ui";
 import { useI18n } from "@/i18n";
 import { downloadFile } from "@/lib/api";
-import { type AuditCategory, type AuditEvent, type AuditResponse, type Integrity, clockTime } from "@/lib/admin";
+import { type AuditCategory, type AuditEvent, type AuditResponse, type Integrity, auditTargetHref, clockTime } from "@/lib/admin";
 
 type Period = "today" | "7d" | "30d" | "all";
 const CATEGORIES: AuditCategory[] = ["views", "clinical", "admin", "security"];
@@ -146,7 +147,17 @@ export default function AdminAuditPage() {
                         </div>
                         <p className="flex flex-wrap items-center gap-1 text-[11px] text-adm-muted">
                           <UserRound size={12} />
-                          {e.target_label ? <span className="text-adm-blue">{e.target_label}</span> : "—"}
+                          {e.target_label ? (
+                            auditTargetHref(e) ? (
+                              <Link href={auditTargetHref(e)!} className="font-semibold text-adm-blue hover:underline">
+                                {e.target_label}
+                              </Link>
+                            ) : (
+                              <span>{e.target_label}</span>
+                            )
+                          ) : (
+                            "—"
+                          )}
                           {e.actor_role ? ` · ${t(`role.${e.actor_role}`)}` : ""}
                           {` · #${e.id}`}
                         </p>
