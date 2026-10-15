@@ -5,7 +5,7 @@ from pathlib import Path
 from huggingface_hub import HfApi
 
 REPO_ID = "BenkraoudaAmine/diabai-models"
-UPLOAD_TOKEN = "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"
+UPLOAD_TOKEN = ""
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 MODELS_APP = BACKEND_DIR / "models_app"
