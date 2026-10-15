@@ -6,7 +6,7 @@ import { HeartPulse, History, ShieldAlert, Stethoscope, Users } from "lucide-rea
 import { LEVEL_TONE, MODEL_TONE, SERVICE_TONE, actionLine } from "@/components/admin/labels";
 import { KpiCard, PageHeading, Panel, StateBox, StatusPill, TONES, card, useAdminApi } from "@/components/admin/ui";
 import { useI18n } from "@/i18n";
-import { type OverviewResponse, timeAgo } from "@/lib/admin";
+import { type OverviewResponse, auditTargetHref, timeAgo } from "@/lib/admin";
 
 /** Figma 05 Admin Screens · Overview (109:29968). */
 export default function AdminOverviewPage() {
@@ -59,7 +59,15 @@ export default function AdminOverviewPage() {
                     <p className="truncate text-xs font-semibold text-adm-ink">{e.actor_name}</p>
                     <p className="truncate text-[11px] text-adm-muted">
                       {actionLine(t, e.action)}
-                      {e.target_label ? ` · ${e.target_label}` : ""}
+                      {e.target_label && " · "}
+                      {e.target_label &&
+                        (auditTargetHref(e) ? (
+                          <Link href={auditTargetHref(e)!} className="font-semibold text-adm-blue hover:underline">
+                            {e.target_label}
+                          </Link>
+                        ) : (
+                          e.target_label
+                        ))}
                     </p>
                   </div>
                   <span className="shrink-0 text-[11px] text-adm-muted">{timeAgo(e.created_at, lang)}</span>

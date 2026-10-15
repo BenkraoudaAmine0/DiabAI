@@ -357,6 +357,15 @@ const adminFr: Record<string, string> = {
   "adm.kb.subtitle": "Documents et livres utilisés par l’assistant IA, avec le stockage et la consommation Gemini.",
   "adm.kb.usage": "Consommation Gemini & coût estimé",
   "adm.kb.lastCall": "Dernier appel {time}",
+  "adm.al.details": "Afficher les détails",
+  "adm.al.hide": "Masquer les détails",
+  "adm.al.source": "Source",
+  "adm.al.firstSeen": "Première occurrence",
+  "adm.al.lastSeenAt": "Dernière occurrence",
+  "adm.al.count": "Occurrences",
+  "adm.al.httpStatus": "Statut HTTP",
+  "adm.al.user": "Utilisateur concerné",
+  "adm.al.resolvedAt": "Résolue",
 };
 
 export default adminFr;

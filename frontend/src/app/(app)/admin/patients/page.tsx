@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CircleCheck, ClipboardClock, HeartPulse, LockKeyhole, TriangleAlert } from "lucide-react";
 
 import { DIRECTORY_TONE } from "@/components/admin/labels";
@@ -27,10 +28,11 @@ const STATUSES: DirectoryStatus[] = ["stable", "needs_review", "new", "high_risk
 /** Figma 05 Admin Screens · Patients (109:30645). Names are shortened
  *  ("Meriem A.") and no contact detail is sent: the directory is for
  *  oversight, records stay with the care team. */
-export default function AdminPatientsPage() {
+function AdminPatientsPageContent() {
   const { t, lang } = useI18n();
   const { data, error, loading, reload } = useAdminApi<PatientsResponse>("/api/admin/patients");
-  const [q, setQ] = useState("");
+  const params = useSearchParams();
+  const [q, setQ] = useState(() => params.get("q") ?? ""); // ?q= from the audit log / alerts
   const [status, setStatus] = useState<"all" | DirectoryStatus>("all");
 
   const rows = useMemo(() => {
@@ -104,5 +106,13 @@ export default function AdminPatientsPage() {
         </DataTable>
       )}
     </>
+  );
+}
+
+export default function AdminPatientsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminPatientsPageContent />
+    </Suspense>
   );
 }

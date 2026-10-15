@@ -41,29 +41,38 @@ def _missing_0013(exc: Exception) -> bool:
 
 # ── audit log ────────────────────────────────────────────────────────────────
 
-def _target_labels(svc, rows: list[dict]) -> dict[str, str]:
-    """Readable targets: patients as their PT- code (no name), staff by name."""
-    ids = {r["target_id"] for r in rows if r.get("target_type") == "profile" and r.get("target_id")}
-    labels: dict[str, str] = {}
+def _people(svc, ids: set[str]) -> dict[str, dict]:
+    """{id: {label, role}} — patients as their PT- code (no name), staff by
+    name, so the admin can open the right list."""
+    out: dict[str, dict] = {}
     if ids:
         try:
             people = execute(lambda: svc.table("profiles").select("id, role, full_name").in_("id", list(ids)).execute()).data or []
         except Exception:
             people = []
         for p in people:
-            labels[p["id"]] = (
-                f"PT-{p['id'][:8].upper()}" if p.get("role") == "patient" else (p.get("full_name") or p["id"][:8])
-            )
-    return labels
+            out[p["id"]] = {
+                "label": f"PT-{p['id'][:8].upper()}" if p.get("role") == "patient" else (p.get("full_name") or p["id"][:8]),
+                "role": p.get("role"),
+            }
+    return out
 
 
-def _shape(rows: list[dict], labels: dict[str, str]) -> list[dict]:
+def _target_labels(svc, rows: list[dict]) -> dict[str, dict]:
+    """Readable targets: patients as their PT- code (no name), staff by name."""
+    return _people(svc, {r["target_id"] for r in rows if r.get("target_type") == "profile" and r.get("target_id")})
+
+
+def _shape(rows: list[dict], labels: dict[str, dict]) -> list[dict]:
     out = []
     for r in rows:
         target = r.get("target_id")
         ttype = r.get("target_type")
+        role = None
         if ttype == "profile" and target:
-            label = labels.get(target, f"U-{target[:8].upper()}")
+            person = labels.get(target) or {}
+            label = person.get("label") or f"U-{target[:8].upper()}"
+            role = person.get("role")
         elif target:
             label = f"{(ttype or 'item').replace('_', ' ')} {target[:8]}"
         else:
@@ -77,6 +86,8 @@ def _shape(rows: list[dict], labels: dict[str, str]) -> list[dict]:
                 "action": r["action"],
                 "category": category(r["action"]),
                 "target_type": ttype,
+                "target_id": target,
+                "target_role": role,  # patient / doctor / admin for a profile
                 "target_label": label,
                 "detail": r.get("detail") or {},
                 "created_at": r["created_at"],
@@ -200,7 +211,7 @@ def audit_integrity(user: AuthUser = Depends(require_admin)) -> dict:
 
 # ── error alerts ─────────────────────────────────────────────────────────────
 
-ALERT_COLUMNS = "id, level, status, source, message, detail, created_at, resolved_at"
+ALERT_COLUMNS = "id, level, status, source, message, detail, user_id, created_at, resolved_at"
 
 
 def open_alerts(svc) -> dict:
@@ -260,6 +271,12 @@ def alerts(
     needle = q.strip().lower()
     if needle:
         rows = [r for r in rows if needle in f"{r['source']} {r['message']}".lower()]
+    # who hit the error: patients as their PT- code, staff by name
+    people = _people(svc, {r["user_id"] for r in rows if r.get("user_id")})
+    for r in rows:
+        person = people.get(r.get("user_id") or "") or {}
+        r["user_label"] = person.get("label")
+        r["user_role"] = person.get("role")
     waits = [
         (parse_ts(r["resolved_at"]) - parse_ts(r["created_at"])).total_seconds() / 60
         for r in month

@@ -582,6 +582,8 @@ const fr: Record<string, string> = {
   "scan.rev.modified": "Corrigé : {label}",
   "scan.rev.referred": "Orienté",
   "scan.rev.change": "Modifier",
+  "shell.collapse": "Réduire le menu",
+  "shell.expand": "Agrandir le menu",
 };
 
 export default fr;

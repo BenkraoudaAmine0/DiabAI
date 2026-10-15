@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut, Menu, X, type LucideIcon } from "lucide-react";
+import { Bell, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X, type LucideIcon } from "lucide-react";
 
 import Logo from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,36 @@ export interface ShellLink {
   href: string;
   label: string;
   icon: LucideIcon;
+}
+
+// desktop sidebar folded to an icon rail — remembered per browser
+const COLLAPSED_KEY = "diabai-sidebar-collapsed";
+const COLLAPSED_EVENT = "diabai:sidebar";
+
+function subscribeCollapsed(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(COLLAPSED_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(COLLAPSED_EVENT, onChange);
+  };
+}
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeCollapsed(value: boolean) {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, value ? "1" : "0");
+  } catch {
+    /* private mode: the choice just isn't remembered */
+  }
+  window.dispatchEvent(new Event(COLLAPSED_EVENT));
 }
 
 export function isNavActive(item: ShellNavItem, pathname: string): boolean {
@@ -100,6 +130,7 @@ function SidebarBody({
   pathname,
   footer,
   onNavigate,
+  collapsed = false,
 }: {
   home: string;
   section: string;
@@ -107,15 +138,18 @@ function SidebarBody({
   pathname: string;
   footer?: React.ReactNode;
   onNavigate?: () => void;
+  collapsed?: boolean; // icon rail: labels become tooltips
 }) {
   return (
     <>
-      <Link href={home} aria-label="DiabAI" onClick={onNavigate} className="shrink-0 px-3 pt-3">
-        <Logo height={60} />
+      <Link href={home} aria-label="DiabAI" onClick={onNavigate} className={`shrink-0 pt-3 ${collapsed ? "self-center" : "px-3"}`}>
+        {collapsed ? <Logo variant="icon" height={52} /> : <Logo height={60} />}
       </Link>
-      <p className="shrink-0 px-7 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-[0.88px] text-slate-500">{section}</p>
+      <p className={`shrink-0 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-[0.88px] text-slate-500 ${collapsed ? "sr-only" : "px-7"}`}>
+        {section}
+      </p>
       {/* only the links scroll; logo and footer stay put */}
-      <nav className="scroll-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4">
+      <nav className={`scroll-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-4 ${collapsed ? "px-3" : "px-4"}`}>
         <ul className="flex flex-col gap-1">
           {nav.map((item) => {
             const on = isNavActive(item, pathname);
@@ -126,21 +160,23 @@ function SidebarBody({
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={on ? "page" : undefined}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-colors ${
+                  aria-label={collapsed ? item.label : undefined}
+                  title={collapsed ? item.label : undefined}
+                  className={`flex items-center gap-3 rounded-lg py-2.5 text-sm transition-colors ${collapsed ? "justify-center" : "px-4"} ${
                     on
                       ? "bg-white font-bold text-brand shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
                       : "font-medium text-slate-700 hover:bg-white/60 hover:text-slate-900"
                   }`}
                 >
                   <IconCmp size={18} strokeWidth={1.8} className="shrink-0" />
-                  <span className="truncate">{item.label}</span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
                 </Link>
               </li>
             );
           })}
         </ul>
       </nav>
-      {footer && <div className="shrink-0 border-t border-slate-200 px-4 py-4">{footer}</div>}
+      {footer && <div className={`shrink-0 border-t border-slate-200 py-4 ${collapsed ? "px-3" : "px-4"}`}>{footer}</div>}
     </>
   );
 }
@@ -148,7 +184,8 @@ function SidebarBody({
 /** The one frame every signed-in area uses (patient, doctor, admin): a
  *  260px light-mint sidebar (logo · section · scrollable links · footer),
  *  a white top bar (title · extra · EN|FR · bell · profile) and the
- *  slate canvas. Below 1024px the sidebar becomes a drawer. */
+ *  slate canvas. On desktop the sidebar folds to an icon rail; below
+ *  1024px it becomes a drawer that slides in. */
 export default function WorkspaceShell({
   home,
   section,
@@ -179,6 +216,8 @@ export default function WorkspaceShell({
   const { t } = useI18n();
   const pathname = usePathname();
   const [drawer, setDrawer] = useState(false);
+  const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
+  const [animate, setAnimate] = useState(false); // only when toggled, not on page load
 
   useEffect(() => {
     if (!drawer) return;
@@ -193,38 +232,83 @@ export default function WorkspaceShell({
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 flex-col border-r border-slate-200 bg-pt-mint-soft lg:flex">
-        <SidebarBody home={home} section={section} nav={nav} pathname={pathname} footer={sidebarFooter} />
+      <aside
+        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-slate-200 bg-pt-mint-soft lg:flex ${
+          animate ? "transition-[width] duration-200 ease-out" : ""
+        } ${collapsed ? "w-[76px]" : "w-[260px]"}`}
+      >
+        <SidebarBody
+          home={home}
+          section={section}
+          nav={nav}
+          pathname={pathname}
+          collapsed={collapsed}
+          footer={
+            <div className="flex flex-col gap-3">
+              {!collapsed && sidebarFooter}
+              <button
+                type="button"
+                onClick={() => {
+                  setAnimate(true);
+                  writeCollapsed(!collapsed);
+                }}
+                aria-label={t(collapsed ? "shell.expand" : "shell.collapse")}
+                title={t(collapsed ? "shell.expand" : "shell.collapse")}
+                className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-slate-600 hover:bg-white/60 hover:text-slate-900 ${
+                  collapsed ? "justify-center" : "px-4"
+                }`}
+              >
+                {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                {!collapsed && t("shell.collapse")}
+              </button>
+            </div>
+          }
+        />
       </aside>
 
-      {drawer && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label={section}>
-          <button type="button" aria-label={t("shell.close")} onClick={() => setDrawer(false)} className="absolute inset-0 bg-slate-900/40" />
-          <aside className="relative flex h-full w-[280px] max-w-[85vw] flex-col bg-pt-mint-soft shadow-xl">
-            <button
-              type="button"
-              onClick={() => setDrawer(false)}
-              aria-label={t("shell.close")}
-              className="absolute right-3 top-5 z-10 rounded-lg p-2 text-slate-500 hover:bg-white/70"
-            >
-              <X size={18} />
-            </button>
-            <SidebarBody
-              home={home}
-              section={section}
-              nav={nav}
-              pathname={pathname}
-              onNavigate={() => setDrawer(false)}
-              footer={
-                <div className="flex flex-col gap-3">
-                  <LangToggle className="sm:hidden" />
-                  {sidebarFooter}
-                </div>
-              }
-            />
-          </aside>
-        </div>
-      )}
+      {/* phone / tablet: the same sidebar slides in from the left */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden ${drawer ? "" : "pointer-events-none"}`}
+        role={drawer ? "dialog" : undefined}
+        aria-modal={drawer || undefined}
+        aria-label={section}
+        aria-hidden={!drawer}
+        inert={!drawer}
+      >
+        <button
+          type="button"
+          aria-label={t("shell.close")}
+          onClick={() => setDrawer(false)}
+          className={`absolute inset-0 bg-slate-900/40 transition-opacity duration-200 ${drawer ? "opacity-100" : "opacity-0"}`}
+        />
+        <aside
+          className={`relative flex h-full w-[280px] max-w-[85vw] flex-col bg-pt-mint-soft shadow-xl transition-transform duration-200 ease-out ${
+            drawer ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => setDrawer(false)}
+            aria-label={t("shell.close")}
+            className="absolute right-3 top-5 z-10 rounded-lg p-2 text-slate-500 hover:bg-white/70"
+          >
+            <X size={18} />
+          </button>
+          <SidebarBody
+            home={home}
+            section={section}
+            nav={nav}
+            pathname={pathname}
+            onNavigate={() => setDrawer(false)}
+            footer={
+              <div className="flex flex-col gap-3">
+                <LangToggle className="sm:hidden" />
+                {sidebarFooter}
+              </div>
+            }
+          />
+        </aside>
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8">
