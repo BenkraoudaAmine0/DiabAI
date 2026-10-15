@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { BadgeCheck, Building2, Hourglass, Link2, MailPlus } from "lucide-react";
 
 import InviteDialog from "@/components/admin/InviteDialog";
@@ -25,10 +26,11 @@ import { api } from "@/lib/api";
 import type { DoctorsResponse } from "@/lib/admin";
 
 /** Figma 05 Admin Screens · Doctors (109:30436). */
-export default function AdminDoctorsPage() {
+function AdminDoctorsPageContent() {
   const { t } = useI18n();
   const { data, error, loading, reload } = useAdminApi<DoctorsResponse>("/api/admin/doctors");
-  const [q, setQ] = useState("");
+  const params = useSearchParams();
+  const [q, setQ] = useState(() => params.get("q") ?? ""); // ?q= from the audit log / alerts
   const [specialty, setSpecialty] = useState("all");
   const [state, setState] = useState<"all" | "verified" | "pending">("all");
   const [inviting, setInviting] = useState(false);
@@ -171,5 +173,13 @@ export default function AdminDoctorsPage() {
         />
       )}
     </>
+  );
+}
+
+export default function AdminDoctorsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminDoctorsPageContent />
+    </Suspense>
   );
 }

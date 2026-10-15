@@ -579,6 +579,8 @@ const en: Record<string, string> = {
   "scan.rev.modified": "Corrected: {label}",
   "scan.rev.referred": "Referred",
   "scan.rev.change": "Change",
+  "shell.collapse": "Collapse menu",
+  "shell.expand": "Expand menu",
 };
 
 export default en;

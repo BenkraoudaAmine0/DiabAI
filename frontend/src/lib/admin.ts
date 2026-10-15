@@ -74,6 +74,8 @@ export interface AuditEvent {
   action: string;
   category: AuditCategory;
   target_type: string | null;
+  target_id?: string | null;
+  target_role?: string | null; // patient / doctor / admin when target_type is "profile"
   target_label: string | null;
   detail: Record<string, unknown>;
   created_at: string;
@@ -104,6 +106,10 @@ export interface AlertRow {
   created_at: string;
   resolved_at: string | null;
   service?: string;
+  // who hit the error (patients as their PT- code)
+  user_id?: string | null;
+  user_label?: string | null;
+  user_role?: string | null;
 }
 
 export interface AlertsResponse {
@@ -261,4 +267,22 @@ export function downloadCsv(filename: string, header: string[], rows: (string | 
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Admin page that lists a person: patients by their PT- code, doctors and
+ *  other staff by name (the lists read ?q=). */
+export function personHref(role: string | null | undefined, label: string | null | undefined): string | null {
+  if (!label) return null;
+  const q = encodeURIComponent(label);
+  if (role === "patient") return `/admin/patients?q=${q}`;
+  if (role === "doctor") return `/admin/doctors?q=${q}`;
+  if (role) return `/admin/users?q=${q}`;
+  return null;
+}
+
+/** Where an audit event's target opens, if anywhere. */
+export function auditTargetHref(e: Pick<AuditEvent, "target_type" | "target_role" | "target_label">): string | null {
+  if (e.target_type === "profile") return personHref(e.target_role, e.target_label);
+  if (e.target_type === "model") return "/admin/models";
+  return null;
 }

@@ -34,6 +34,14 @@ def _who(patients: dict, row: dict) -> dict:
     }
 
 
+def _scan_link(scan: dict) -> str:
+    """Foot / neck photos open the review page; retina scans the record."""
+    pid = scan.get("patient_id")
+    if scan.get("scan_type") in ("foot", "neck"):
+        return f"/doctor/scans?patient={pid}&type={scan['scan_type']}"
+    return f"/doctor/patients/{pid}"
+
+
 def activity(preds: list[dict], scans: list[dict], patients: dict) -> list[dict]:
     """Predictions and scans merged, newest first."""
     items = []
@@ -59,7 +67,7 @@ def activity(preds: list[dict], scans: list[dict], patients: dict) -> list[dict]
             "label": result.get("label"),
             "referable": result.get("referable_dr"),
             "confidence": result.get("confidence"),
-            "link": f"/doctor/patients/{s.get('patient_id')}",
+            "link": _scan_link(s),
         })
     return sorted(items, key=lambda i: i.get("created_at") or "", reverse=True)
 
@@ -102,8 +110,7 @@ def doctor_dashboard(user: AuthUser = Depends(require_doctor)) -> dict:
                     "id": r["id"],
                     **_who(patients, r),
                     "created_at": r.get("created_at"),
-                    "link": f"/predictions/{r['id']}" if kind == "prediction"
-                    else f"/doctor/patients/{r.get('patient_id')}",
+                    "link": f"/predictions/{r['id']}" if kind == "prediction" else _scan_link(r),
                 })
     alerts.sort(key=lambda a: a.get("created_at") or "", reverse=True)
 
