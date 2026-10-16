@@ -36,5 +36,4 @@ onnxruntime>=1.17
 opencv-python-headless
 huggingface-hub>=0.20
 
-# Required for the bundled .h5 vision models (foot / eye):
-tensorflow-cpu
+# onnxruntime loads foot/model.onnx and eye/model.onnx without heavy tensorflow

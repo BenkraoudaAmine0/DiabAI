@@ -11,8 +11,8 @@ DEFAULT_REPO_ID = "BenkraoudaAmine/diabai-models"
 
 # Remote path inside HuggingFace repo -> Local target path
 MODEL_FILES = {
-    "foot/Diabetic_Foot_UIcer1.h5": MODELS_APP / "foot" / "Diabetic_Foot_UIcer1.h5",
-    "eye/Resnet50_bestqwk.h5": MODELS_APP / "eye" / "Resnet50_bestqwk.h5",
+    "foot/model.onnx": MODELS_APP / "foot" / "model.onnx",
+    "eye/model.onnx": MODELS_APP / "eye" / "model.onnx",
     "diabetes/xgb_diabetes.pkl": MODELS_APP / "diabetes" / "xgb_diabetes.pkl",
     "diabetes/scaler.pkl": MODELS_APP / "diabetes" / "scaler.pkl",
     "diabetes/xgb_threshold.pkl": MODELS_APP / "diabetes" / "xgb_threshold.pkl",

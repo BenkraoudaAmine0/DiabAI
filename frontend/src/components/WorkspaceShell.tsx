@@ -131,6 +131,7 @@ function SidebarBody({
   footer,
   onNavigate,
   collapsed = false,
+  onToggleCollapse,
 }: {
   home: string;
   section: string;
@@ -139,12 +140,27 @@ function SidebarBody({
   footer?: React.ReactNode;
   onNavigate?: () => void;
   collapsed?: boolean; // icon rail: labels become tooltips
+  onToggleCollapse?: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <>
-      <Link href={home} aria-label="DiabAI" onClick={onNavigate} className={`shrink-0 pt-3 ${collapsed ? "self-center" : "px-3"}`}>
-        {collapsed ? <Logo variant="icon" height={52} /> : <Logo height={60} />}
-      </Link>
+      <div className={`flex shrink-0 items-center pt-3 ${collapsed ? "flex-col gap-2 px-2" : "justify-between px-4"}`}>
+        <Link href={home} aria-label="DiabAI" onClick={onNavigate} className={collapsed ? "self-center" : ""}>
+          {collapsed ? <Logo variant="icon" height={52} /> : <Logo height={60} />}
+        </Link>
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={t(collapsed ? "shell.expand" : "shell.collapse")}
+            title={t(collapsed ? "shell.expand" : "shell.collapse")}
+            className="flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-white/70 hover:text-slate-900 transition-colors"
+          >
+            {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
+        )}
+      </div>
       <p className={`shrink-0 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-[0.88px] text-slate-500 ${collapsed ? "sr-only" : "px-7"}`}>
         {section}
       </p>
@@ -243,26 +259,11 @@ export default function WorkspaceShell({
           nav={nav}
           pathname={pathname}
           collapsed={collapsed}
-          footer={
-            <div className="flex flex-col gap-3">
-              {!collapsed && sidebarFooter}
-              <button
-                type="button"
-                onClick={() => {
-                  setAnimate(true);
-                  writeCollapsed(!collapsed);
-                }}
-                aria-label={t(collapsed ? "shell.expand" : "shell.collapse")}
-                title={t(collapsed ? "shell.expand" : "shell.collapse")}
-                className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-slate-600 hover:bg-white/60 hover:text-slate-900 ${
-                  collapsed ? "justify-center" : "px-4"
-                }`}
-              >
-                {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-                {!collapsed && t("shell.collapse")}
-              </button>
-            </div>
-          }
+          onToggleCollapse={() => {
+            setAnimate(true);
+            writeCollapsed(!collapsed);
+          }}
+          footer={!collapsed && sidebarFooter ? <div className="flex flex-col gap-3">{sidebarFooter}</div> : undefined}
         />
       </aside>
 
