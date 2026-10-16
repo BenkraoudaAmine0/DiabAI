@@ -1,389 +1,389 @@
-# DiabAI
-
-AI-powered diabetes screening & care platform — ThirUni Program.
-
-Doctors detect diabetes and screen for its complications; patients check
-visible risk indicators themselves. One unified web app combining:
-
-| Model                                     | Type               | Who can use it   |
-| ----------------------------------------- | ------------------ | ---------------- |
-| Diabetes risk prediction (XGBoost + SHAP) | Machine learning   | Doctor only      |
-| Foot ulcer detection                      | Deep learning (CV) | Doctor + Patient |
-| Neck / Acanthosis Nigricans detection     | Deep learning (CV) | Doctor + Patient |
-| Eye / Retinopathy grading (5 levels)      | Deep learning (CV) | Doctor only      |
-| RAG chatbot assistant (Gemini + pgvector) | LLM                | Doctor + Patient |
-
-**Stack:** Next.js 16 (TypeScript, Tailwind) · FastAPI (Python, LangChain +
-LangGraph RAG) · Supabase only — Auth (email/password), Postgres + pgvector
-(all data), Storage (scan images, SHAP explanations, knowledge base) · Gemini
-as the single LLM (`gemini-3.5-flash-lite`), no fallback model.
-
-**Docs:** [roles &amp; permissions (admin, doctor, patient)](docs/ROLES.md) ·
-[RAG architecture, verification &amp; code review](docs/RAG_ARCHITECTURE.md)
+# DiabAI — AI-Powered Diabetes Screening & Care Platform
 
 ---
 
-## Project layout
+## 1. Project Name & One-Line Summary
+
+**DiabAI** is an AI-powered clinical screening platform helping doctors detect diabetes early and screen complications alongside patient self-checks.
+
+---
+
+## 2. Project Description
+
+Over 537 million adults live with diabetes, with more than 40% undiagnosed until severe complications like diabetic foot ulcers or retinopathy occur. General practitioners lack rapid, explainable risk tools, while patients struggle with early self-detection.
+
+DiabAI provides a collaborative clinical screening platform for healthcare providers and patients. Doctors assess metabolic risk via an XGBoost model with SHAP factor explanations and Gemini clinical summaries, validate official reports, and grade complications. Patients perform visual checks for foot ulcers and acanthosis nigricans using computer vision models and ask an evidence-grounded RAG assistant citing clinical guidelines. Doctor-validated reviews guarantee clinical safety before patients see predictions.
+
+Designed for clinicians, endocrinologists, and individuals at risk of diabetes.
+
+---
+
+## 3. Live Demo Link & Credentials
+
+- **Live Application URL:** [https://diab-ai.vercel.app](https://diabai.vercel.app) *(or local demo at `http://localhost:3000`)*
+- **API Status & Health Check:** [https://diabai-9iy5.onrender.com/api/health](https://diabai-9iy5.onrender.com/api/health)
+- **Computer Vision Inference (Hugging Face ZeroGPU):** [https://huggingface.co/spaces/BenkraoudaAmine/diabai-vision](https://huggingface.co/spaces/BenkraoudaAmine/diabai-vision)
+
+### Demo Accounts for Evaluators
+
+| Role              | Email                       | Password               | Notes                                                                                |
+| :---------------- | :-------------------------- | :--------------------- | :----------------------------------------------------------------------------------- |
+| **Doctor**  | `doctor.demo@diabai.com`  | `DiabAIDoctor2026!`  | Access to ML risk predictor, SHAP analysis, patient panel, reports & eye scan        |
+| **Patient** | `patient.demo@diabai.com` | `DiabAIPatient2026!` | Access to foot ulcer photo check, RAG medical assistant & confirmed records          |
+| **Admin**   | `admin.demo@diabai.com`   | `DiabAIAdmin2026!`   | Access to system metrics, token usage costs, security audits & knowledge base ingest |
+
+*(Evaluators can also self-register as Doctor or Patient directly from the landing page).*
+
+---
+
+## 4. Code Repository
+
+- **Public GitHub Repository:** [https://github.com/BenkraoudaAmine0/DiabAI](https://github.com/BenkraoudaAmine0/DiabAI)
+
+---
+
+## 5. Demo Video
+
+- **Video Walkthrough (YouTube / Google Drive):** [Watch DiabAI Demo Video](https://youtu.be/placeholder-diabai-demo) *(3-minute full clinical workflow demonstration: doctor prediction, SHAP waterfall, Gemini interpretation, PDF export, patient foot ulcer check, and grounded RAG chatbot).*
+
+---
+
+## 6. Team Members & Roles
+
+- **Mohamed Amine Benkraouda** (`BenkraoudaAmine0`): Machine learning engineering (XGBoost, SHAP explainability, ResNet ONNX vision models), FastAPI backend architecture, LangGraph RAG pipeline, Supabase database schemas & migrations, and Hugging Face ZeroGPU inference service.
+- **Abdelhak Hamzi** (`abdelhak0999`): Frontend architecture (Next.js 16, TypeScript, Tailwind CSS), Figma UI/UX redesign, responsive patient portal & doctor workspace shells, client-side photo workflows, and bilingual (English/French) internationalization.
+
+---
+
+## 7. Tech Stack & AI Tools Used
+
+### Languages & Frameworks
+
+- **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Lucide Icons
+- **Backend:** Python 3.11, FastAPI, Pydantic v2, Uvicorn, ReportLab (bilingual clinical PDF generation)
+
+### Machine Learning & Computer Vision
+
+- **Tabular Risk Prediction:** XGBoost classifier with custom decision threshold (0.395) tuned to minimize false negatives on prediabetic and diabetic patient cohorts.
+- **Explainability:** SHAP (TreeExplainer) generating feature importance and patient-specific waterfall attribution plots.
+- **Vision Models:** ResNet50 / CNN models exported to ONNX format for diabetic foot ulcer detection and retinopathy classification.
+- **Vision Inference Hosting:** Dedicated Hugging Face Space running on ZeroGPU (`BenkraoudaAmine/diabai-vision`) via `gradio_client` to avoid memory limits.
+
+### Generative AI & RAG
+
+- **LLM:** Google Gemini (`gemini-3.5-flash-lite`) via Google GenAI SDK for clinical interpretations and grounded medical answers.
+- **Embeddings:** Google `gemini-embedding-001` (API) & FastEmbed (`embeddinggemma-300m`, local CPU).
+- **RAG Orchestration:** LangChain & LangGraph (condense query → pgvector cosine retrieval → citation generation with chapter/page metadata).
+- **Multimodal Document Parsing:** PyMuPDF, python-docx, and ebooklib with Gemini image OCR for tables, charts, and scanned textbook pages.
+
+### Database, Auth & Infrastructure
+
+- **Database & Auth:** Supabase (PostgreSQL with `pgvector` HNSW index, Row Level Security, Supabase Auth with JWT verification, Storage buckets, Realtime websocket alerts).
+- **Hosting:** Vercel (Frontend), Render (FastAPI Backend), Hugging Face Spaces (GPU Vision).
+
+### AI Pair-Programming Tools
+
+- Heavily utilized **Google Antigravity**, **Claude Code**, and   **ZCode** for architectural prototyping, SQL migration hardening, automated test scenarios, and debugging deployment environments.
+
+---
+
+## 8. What Happens Next (3-Month Roadmap)
+
+Over the next three months, we will pilot DiabAI with local Algerian health clinics to validate diagnostic accuracy on real patient cohorts. We plan to integrate offline-capable mobile on-device vision models (ONNX Runtime / TFLite) for rural clinics with intermittent connectivity. We will expand retinopathy grading to full 5-stage clinical classification with certified ophthalmologist benchmarks, secure health data privacy compliance, and enable automated laboratory EHR sync (HL7/FHIR) for direct bloodwork ingestion.
+
+*(71 words)*
+
+---
+
+## System Architecture
+
+![DiabAI System Architecture](docs/architecture_diagram.png)
+
+<details>
+<summary><b>Click to view interactive Mermaid flowchart</b></summary>
+
+```mermaid
+flowchart TD
+    %% User Roles
+    node_doctor(("Doctor"))
+    node_patient(("Patient"))
+    node_admin(("Administrator"))
+
+    subgraph group_experience["User experience"]
+        node_auth_ui["Sign-in and registration<br/><code>[page.tsx]</code>"]
+        node_web["Role-based web app"]
+    end
+
+    subgraph group_platform["Platform services"]
+        node_api["FastAPI entry point<br/><code>[main.py]</code>"]
+        node_auth["JWT and role guards<br/><code>[auth.py]</code>"]
+        node_panel["Patient panel<br/><code>[patients.py]</code>"]
+    end
+
+    subgraph group_clinical["Clinical screening"]
+        node_diabetes_api["Diabetes endpoints<br/><code>[diabetes.py]</code>"]
+        node_diabetes_model["Risk prediction"]
+        node_report["Prediction PDF reports<br/><code>[report_service.py]</code>"]
+        node_interpretation["Clinical interpretation"]
+        node_vision_api["Scan endpoints<br/><code>[vision.py]</code>"]
+        node_vision_model["Foot, neck, eye models<br/><code>[vision_service.py]</code>"]
+    end
+
+    subgraph group_assistant["Knowledge assistant"]
+        node_chat_api["Chat endpoint<br/><code>[chat.py]</code>"]
+        node_rag["Cited RAG workflow<br/><code>[rag_service.py]</code>"]
+        node_embeddings["Embedding models<br/><code>[embeddings.py]</code>"]
+        node_kb_api["Knowledge admin API<br/><code>[kb.py]</code>"]
+        node_ingest["Document ingestion"]
+        node_loaders["Document loaders<br/><code>[kb_loaders.py]</code>"]
+    end
+
+    subgraph group_data["Data and integrations"]
+        node_gemini["Gemini model<br/><code>[gemini_service.py]</code>"]
+        node_supabase_client["Supabase clients<br/><code>[supabase_client.py]</code>"]
+        node_supabase[("Supabase Auth, DB, Storage")]
+    end
+
+    %% Connections
+    node_doctor -->|uses| node_web
+    node_patient -->|uses| node_web
+    node_admin -->|uses| node_web
+
+    node_web -.->|calls API| node_api
+    node_auth_ui -.->|auth API| node_api
+
+    node_api -->|verifies users| node_auth
+    node_api -->|routes| node_diabetes_api
+    node_api -->|routes| node_vision_api
+    node_api -->|routes| node_chat_api
+    node_api -->|routes| node_kb_api
+
+    node_diabetes_api -->|predicts with| node_diabetes_model
+    node_diabetes_api -->|interprets with| node_interpretation
+    node_diabetes_api -->|generates report| node_report
+
+    node_vision_api -->|scans with| node_vision_model
+
+    node_chat_api -->|answers via| node_rag
+    node_rag -->|embeds queries| node_embeddings
+    node_rag -->|generates with| node_gemini
+
+    node_kb_api -->|ingests via| node_ingest
+    node_ingest -->|loads documents| node_loaders
+    node_ingest -->|embeds chunks| node_embeddings
+    node_ingest -->|reads figures| node_gemini
+
+    node_panel -->|reads and writes| node_supabase_client
+    node_auth -->|verifies token| node_supabase_client
+    node_supabase_client -->|connects| node_supabase
+```
+
+</details>
+
+---
+
+## Project Structure
 
 ```
 DiabAI/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                  FastAPI entrypoint (+ /api/health model status)
-│   │   ├── config.py                pydantic-settings (.env)
-│   │   ├── auth.py                  Supabase JWT verify + role guards
-│   │   ├── schemas.py               request/response models
+│   │   ├── main.py                  FastAPI entrypoint (+ /api/health check)
+│   │   ├── config.py                Pydantic settings (.env management)
+│   │   ├── auth.py                  Supabase JWT verification + role guards
+│   │   ├── schemas.py               Request & response models
 │   │   ├── routers/
-│   │   │   ├── diabetes.py          predict, report, review, interpretation, PDF
-│   │   │   ├── vision.py            POST /api/scan/{foot|neck|eye}  (eye: doctor)
-│   │   │   ├── patients.py          panel CRUD + account creation + history
-│   │   │   ├── records.py           GET /api/records/me (own history)
-│   │   │   ├── chat.py              POST /api/chat (RAG, cited answers)
-│   │   │   ├── admin.py             GET /api/admin/{stats,users}       (admin)
-│   │   │   └── kb.py                /api/admin/kb/documents upload/list/delete/re-index (admin)
+│   │   │   ├── diabetes.py          Risk prediction, SHAP waterfall, validation, PDF
+│   │   │   ├── vision.py            POST /api/scan/{foot|neck|eye}
+│   │   │   ├── patients.py          Doctor panel CRUD & patient onboarding
+│   │   │   ├── records.py           GET /api/records/me (patient medical history)
+│   │   │   ├── chat.py              POST /api/chat (grounded RAG with citations)
+│   │   │   ├── admin.py             GET /api/admin/{stats,users,health}
+│   │   │   ├── admin_security.py    Security audit logs, failed logins, IP tracking
+│   │   │   └── kb.py                KB document upload/list/delete/re-index
 │   │   └── services/
-│   │       ├── supabase_client.py   anon (auth) + service-role (DB/Storage) clients
+│   │       ├── supabase_client.py   Anon (Auth) + Service-Role (DB/Storage) clients
 │   │       ├── diabetes_service.py  XGBoost + scaler + threshold + SHAP + tiers
-│   │       ├── vision_service.py    multi-format loader (.onnx/.h5/.keras/.pt/.pth)
-│   │       ├── gemini_service.py    one Gemini model (chat model, image reading)
-│   │       ├── rag_service.py       LangGraph: condense → retrieve → generate
-│   │       ├── interpretation_service.py  clinical interpretation (Gemini)
-│   │       ├── report_service.py    prediction report PDF (ReportLab, EN/FR)
-│   │       ├── kb_loaders.py        PDF/DOCX/EPUB/TXT/MD → text, tables, figures
-│   │       ├── kb_ingest_service.py loaders → chunks → embeddings → kb_chunks
+│   │       ├── vision_service.py    Hugging Face ZeroGPU / local ONNX loader
+│   │       ├── gemini_service.py    Gemini LLM client (summaries & vision OCR)
+│   │       ├── rag_service.py       LangGraph workflow: condense → retrieve → generate
+│   │       ├── interpretation_service.py Clinical AI interpretation
+│   │       ├── report_service.py    Bilingual medical PDF report (ReportLab)
+│   │       ├── kb_loaders.py        PDF/DOCX/EPUB/TXT/MD extractors
+│   │       ├── kb_ingest_service.py Chunker → embeddings → pgvector storage
 │   │       └── kb_vectorstore.py    SupabaseVectorStore adapter for kb_chunks
-│   ├── models_app/                  ← YOUR trained models go here (see below)
-│   ├── knowledge_base/              seed diabetes docs for the chatbot
+│   ├── models_app/                  Model artifacts (XGBoost, scaler, threshold, SHAP)
+│   ├── knowledge_base/              Seed diabetes clinical guidelines
 │   ├── scripts/
-│   │   ├── ingest_kb.py             CLI ingestion (same pipeline as admin upload)
-│   │   └── verify_diabetes.py       replays the 8 notebook test scenarios
-│   ├── supabase/migrations/000{1..8}_*.sql ← run once each, in order, in SQL Editor
-│   ├── requirements.txt · .env.example
-├── frontend/                        Next.js app (EN/FR toggle)
-│   └── src/{app,components,contexts,i18n,lib}
+│   │   ├── check_setup.py           Full read-only environment verification
+│   │   ├── download_models.py       Downloads models from Hugging Face Hub
+│   │   ├── ingest_kb.py             CLI knowledge base ingestion
+│   │   └── verify_diabetes.py       Replays test scenarios against clinical logic
+│   └── supabase/migrations/         0001 through 0013 SQL migrations
+├── frontend/                        Next.js 16 application
+│   ├── src/
+│   │   ├── app/                     App Router pages (Doctor, Patient, Admin, Auth)
+│   │   ├── components/              Reusable UI (WorkspaceShell, Charts, Scans)
+│   │   ├── contexts/                Auth, Language (EN/FR), and Notification contexts
+│   │   └── lib/                     Supabase client and utility helpers
 ├── docs/                            ROLES.md · RAG_ARCHITECTURE.md
-├── datasets/                        diabetes_prediction_dataset.csv (training)
-└── models/                          original training artifacts + notebooks
+├── datasets/                        diabetes_prediction_dataset.csv (training data)
+└── models/                          Training notebooks & raw model exports
 ```
 
 ---
 
-## Setup — 6 steps
+## Local Setup & Installation
 
-### 1. Supabase project
+### Step 1: Clone Repository
+
+```bash
+git clone https://github.com/BenkraoudaAmine0/DiabAI.git
+cd DiabAI
+```
+
+### Step 2: Database Setup (Supabase)
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. SQL Editor → New query → paste **all** of
-   `backend/supabase/migrations/0001_init.sql` → **Run**, then do the same,
-   in order, with `0002_admin.sql` … `0009_embedding_model.sql`.
-   All nine are required:
+2. Open the **SQL Editor** in Supabase and run the migration files in `backend/supabase/migrations/` sequentially:
 
-   | Migration | Adds                                                                                                                   |
-   | --------- | ---------------------------------------------------------------------------------------------------------------------- |
-   | 0001      | tables, RLS policies,`match_kb_chunks`, `scans` / `kb-docs` buckets                                              |
-   | 0002      | `gemini_usage` (admin usage & cost view)                                                                             |
-   | 0003      | HNSW vector index                                                                                                      |
-   | 0004      | `notifications` table + Realtime publication for the in-app bell                                                     |
-   | 0005      | knowledge-base upload status, file info, page / chapter citations,`match_kb_chunks_v2`                               |
-   | 0006      | knowledge-base extraction stats (tables, images read, scanned pages)                                                   |
-   | 0007      | prediction review (pending / confirmed / rejected) + clinical interpretation; patients only read confirmed predictions |
-   | 0008      | **security:** nobody can sign up as admin or change their own role / email; creates missing profiles             |
-   | 0009      | records which embedding model indexed each document; search only uses documents of the current model                   |
-3. Project Settings → API: copy the **Project URL**, the **anon public key**
-   and the **service_role key**.
-4. Authentication → **URL Configuration**:
+| Migration                        | Purpose                                                                         |
+| :------------------------------- | :------------------------------------------------------------------------------ |
+| `0001_init.sql`                | Core schema, RLS policies, `match_kb_chunks`, `scans` & `kb-docs` buckets |
+| `0002_admin.sql`               | `gemini_usage` tracking table for token and cost management                   |
+| `0003_kb_index.sql`            | HNSW vector index for pgvector similarity searches                              |
+| `0004_notifications.sql`       | In-app notification triggers and Realtime publication                           |
+| `0005_kb_uploads.sql`          | Upload statuses, chunk citation metadata, `match_kb_chunks_v2`                |
+| `0006_kb_rich_content.sql`     | Extraction metrics (tables, charts, and OCR pages)                              |
+| `0007_prediction_review.sql`   | Doctor validation flow (pending / confirmed / rejected)                         |
+| `0008_role_hardening.sql`      | Role escalation prevention and automated profile synchronization                |
+| `0009_embedding_model.sql`     | Multi-model embedding tagging and `match_kb_chunks_v3`                        |
+| `0010_profiles_admin_role.sql` | Admin security role definitions                                                 |
+| `0011_next_visit.sql`          | Patient clinical recall and appointment scheduling                              |
+| `0012_patient_record.sql`      | Comprehensive patient medical history view                                      |
+| `0013_admin_security.sql`      | System security audit logging and failed authentication tracking                |
 
-   - **Site URL**: your frontend, e.g. `http://localhost:3000`
-   - **Redirect URLs**: add `http://localhost:3000/**` (and your production
-     URL + `/**`) — it covers `/auth/callback` and `/set-password`, where
-     invitation and password-reset emails lead. Without it, Supabase falls
-     back to the Site URL (the landing page then forwards the link). Set
-     `FRONTEND_URL` in `backend/.env` to the same frontend URL.
+3. Copy the **Project URL**, **Anon Key**, and **Service Role Key** from **Project Settings → API**.
+4. In **Authentication → URL Configuration**, add `http://localhost:3000/**` to **Redirect URLs**.
 
-> **Auth settings:** Authentication → Providers → Email must be enabled.
-> Email confirmation: ON is recommended for public signups — but Supabase's
-> built-in email only reaches your project's team members, so turn it off
-> for development or set up custom SMTP. The doctor-created patient accounts
-> (temp-password method) bypass confirmation automatically.
-
-### 2. Gemini API key
-
-Get one at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
-The model name is set by `GEMINI_MODEL` (default `gemini-3.5-flash-lite`) —
-change it in one place (`backend/.env`) if Google renames the model. There is
-**no fallback model** by design.
-
-### 3. Backend
+### Step 3: Backend Setup
 
 ```bash
 cd backend
-python -m venv .venv && .venv\Scripts\activate     # (Windows) or source .venv/bin/activate
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+# source .venv/bin/activate
+
 pip install -r requirements.txt
-copy .env.example .env                              # then fill in all values
+copy .env.example .env    # Linux/macOS: cp .env.example .env
+```
+
+Configure your `.env` with your Supabase credentials, Google Gemini API key, and Hugging Face settings:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-3.5-flash-lite
+EMBEDDING_PROVIDER=gemini
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+HF_MODEL_REPO_ID=BenkraoudaAmine/diabai-models
+```
+
+Verify your setup:
+
+```bash
+python scripts/check_setup.py
+```
+
+Run the backend server:
+
+```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-On startup the log prints model availability; `/api/health` returns the same
-status JSON. Missing models never crash the app — their endpoints return 503
-with instructions.
+### Step 4: Knowledge Base Seed Ingestion
 
-**Check the whole setup** (read-only — env files, Supabase connection and
-Auth settings, migrations, buckets, Gemini key and model names, ML model):
+Populate the RAG knowledge base with the included clinical guidelines:
 
 ```bash
-python scripts/check_setup.py        # Windows: .venv\Scripts\python.exe scripts\check_setup.py
-```
-
-> Windows: if `pip.exe` / `uvicorn.exe` are blocked ("stratégie de contrôle
-> d'application"), call them through Python: `.venv\Scripts\python.exe -m pip …`,
-> `.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000`.
-> If `npm` is blocked by the PowerShell execution policy, use `npm.cmd`.
-
-### 4. Knowledge base (chatbot)
-
-```bash
-cd backend
 python scripts/ingest_kb.py
 ```
 
-Ingests every supported file in `knowledge_base/` — **PDF, EPUB, Word
-(.docx), TXT, Markdown** — with the same pipeline as the admin dashboard
-upload (`app/services/kb_ingest_service.py`): LangChain loaders
-(`app/services/kb_loaders.py` — PyMuPDF, python-docx, ebooklib) that read
-the text, the **tables** (as Markdown) and the **images** (figures, charts,
-scanned pages, read by Gemini — at most `KB_MAX_VISION_CALLS` per file) →
-`RecursiveCharacterTextSplitter` (900/150; tables are cut between rows only)
-→ embeddings (768 dims) → `kb_chunks` through `DiabAIVectorStore` (see
-`app/services/kb_vectorstore.py`).
-
-**Embedding model** (`EMBEDDING_PROVIDER` in `backend/.env`):
-
-|                                   | `local` (default)                                              | `gemini`                                       |
-| --------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
-| Model                             | `google/embeddinggemma-300m`, on the server (fastembed / ONNX) | `gemini-embedding-001` (API)                   |
-| Cost / limits                     | free, no limits                                                  | free tier ≈ 1 000 requests/day, 30 k tokens/min |
-| 1 100-page book (≈ 4 000 chunks) | ≈ 15 min on a laptop CPU                                        | can take days on the free tier; ≈ $0.10 paid    |
-| Needs                             | ~1.2 GB download once (`models_app/embeddings/`), ~1.5 GB RAM  | `GEMINI_API_KEY`                               |
-
-Questions and documents must be embedded by the **same** model, so each
-document remembers its model (migration 0009) and the chatbot only searches
-documents of the current one. After changing `EMBEDDING_PROVIDER`, re-index
-the knowledge base (admin dashboard → *Re-index*, or run
-`scripts/ingest_kb.py` again — it re-embeds what another model indexed). PDF chunks keep their page number and
-chapter (from the PDF bookmarks), EPUB / Word chunks their chapter /
-section, so the chatbot cites "Title · Chapter · p. 142". Details:
-[docs/RAG_ARCHITECTURE.md](docs/RAG_ARCHITECTURE.md).
-
-Re-running is safe: files already ingested (same content hash) are skipped.
+### Step 5: Frontend Setup
 
 ```bash
-python scripts/ingest_kb.py path/to/book.pdf --kind book   # specific files
-python scripts/ingest_kb.py --reset                        # wipe the whole KB first
-```
-
-`--reset` also deletes documents admins uploaded from the dashboard.
-
-The easier way for day-to-day use is the admin dashboard (see **Admin**).
-
-### 5. Frontend
-
-```bash
-cd frontend
+cd ../frontend
 npm install
-copy .env.example .env.local                        # then fill in Supabase URL/anon key
-npm run dev                                          # http://localhost:3000
+copy .env.example .env.local    # Linux/macOS: cp .env.example .env.local
 ```
 
-### 6. Vision models (when ready)
+Set your environment variables in `.env.local`:
 
-See `backend/models_app/README.md`. Drop one file per folder —
-`model.onnx` (recommended), `model.h5`, `model.keras`, or TorchScript
-`model.pt/.pth` — optionally with a `labels.json`:
-
-```json
-{"labels": ["no_ulcer", "ulcer"], "image_size": 224}
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-Until then, `/api/scan/{foot|neck|eye}` returns 503 with a clear message.
-
----
-
-## How it works
-
-### Diabetes prediction (doctor)
-
-The form maps directly onto the trained model's 8 features
-(`gender, age, hypertension, heart_disease, smoking_history, bmi, HbA1c_level, blood_glucose_level`). The backend replicates
-`models/test_model.ipynb` exactly:
-
-- encodings from the training pipeline: `Female→0 / Male→1`;
-  smoking `never|No Info→non-smoker(1)`, `current→0`,
-  `ever|former|not current→past_smoker(2)`;
-- `prob = model.predict_proba(scaled)[0][1]`, positive at threshold **0.395**;
-- risk tier with the **Prediabetic override first** (HbA1c 5.7–6.5 *and*
-  glucose 100–126 → `Prediabetic ⚠️`), then Low <0.3 · Moderate <0.5 ·
-  High <0.75 · Critical;
-- SHAP values for all 8 features, and a SHAP waterfall PNG (stored in
-  Supabase Storage) labelled with the entered values ("6.2 % = HbA1c").
-
-After **Predict**, the doctor lands on the **report** (`/predictions/{id}`):
-risk gauge with the decision threshold, probability, tier, the entered
-values against reference ranges, the main contributing factors, and a
-**clinical interpretation written by Gemini** (stored per language,
-regenerable). From there the doctor can:
-
-- **Confirm & validate** or **Reject**, with an optional note — every
-  prediction is *pending* until then, and **patients only see confirmed
-  predictions** (API and RLS, migration 0007);
-- **Modify inputs** — back to the form, prefilled, for a new prediction;
-- **Export PDF** — the same report in English or French (ReportLab), also
-  available from the patient's file and, once confirmed, to the patient.
-
-`python scripts/verify_diabetes.py` replays the notebook's 8 test scenarios
-and asserts the tier logic.
-
-### Patient accounts created by a doctor
-
-Doctors create patient accounts in **My patients → New patient**, choosing:
-
-- **Email invitation** — Supabase sends a link that opens `/set-password`,
-  where the patient creates their own password and is signed in immediately.
-  The redirect target comes from `FRONTEND_URL` in `backend/.env`. An
-  expired link shows a clear message: the doctor sends a new one from the
-  patient's page (*Login access*), or the patient uses **Forgot password?**
-  on the sign-in page, which leads to the same page.
-  (Uses Supabase's built-in SMTP, which is rate-limited on the free tier —
-  configure custom SMTP in Auth → SMTP for real use.)
-- **Temporary password** — a 12-char password is generated via the Admin API
-  and shown **once** on the doctor's screen with a copy button; the doctor
-  shares it in person. The patient can change it later in Profile.
-
-Doctors can also **Add existing** (link a self-registered patient by email),
-and every patient a doctor runs a diagnostic for is added to their panel
-automatically. A doctor sees the **full clinical history** (predictions +
-scans, including records made by other doctors) of every panel patient at
-`/doctor/patients/{id}`. Patients see their own scans and the diabetes
-predictions their doctor **confirmed** under **My history**.
-
-### RAG chatbot
-
-A LangGraph graph (`app/services/rag_service.py`):
-**condense** (a follow-up like "and for children?" is rewritten into a
-standalone query from the conversation) → **retrieve** (question embedded by the KB's model →
-`match_kb_chunks_v3`, cosine similarity, `ready` documents of that model only, top 5) →
-**generate** (grounded `gemini-3.5-flash-lite` answer with `[n]` citations,
-shown as source chips with chapter, page and a *table* / *figure* tag) — or
-**no_context** when nothing relevant was found (no model call).
-`KB_MIN_SIMILARITY` in `backend/.env` drops weak matches — it defaults to
-`0` (always top 5); try ~`0.5` once you have real questions to tune it on.
-Each step is a LangChain component: `DiabAIVectorStore` (a
-`SupabaseVectorStore` adapter), LCEL chains (`prompt | llm | StrOutputParser()`), token usage logged per call. A conversation keeps its
-session, so the bot remembers the last exchanges; *New conversation* starts
-over. It answers in English or French (matching the question) and never
-diagnoses. Architecture, tests and review:
-[docs/RAG_ARCHITECTURE.md](docs/RAG_ARCHITECTURE.md).
-
-### Notifications
-
-A bell in the top bar shows unread in-app notifications for every user,
-updated **live** via Supabase Realtime (with a 60s polling fallback).
-Triggered events: a doctor records a **diabetes prediction** or a **scan**
-for a patient → the patient is notified; a patient account is
-**created or linked** to a doctor's panel → the patient gets a welcome
-notification. Notification text is structured (`kind` + `data`), so titles
-render in the user's language (EN/FR). Clicking one navigates to the
-relevant page and marks it read; "Mark all read" clears the badge.
-
-### Admin
-
-Make an admin (SQL Editor):
-
-```sql
-update public.profiles set role = 'admin' where email = 'you@example.com';
-```
-
-The admin signs in like anyone else and gets an **Admin** dashboard at
-`/admin/dashboard` showing doctors, patients, Storage usage per bucket, and
-Gemini API usage (calls, tokens, estimated cost). Admins also have full
-doctor-level access to every clinical tool. Cost estimates use the
-per-million-token prices in `backend/.env`
-(`GEMINI_INPUT_PRICE_PER_MTOK`, `GEMINI_OUTPUT_PRICE_PER_MTOK`,
-`GEMINI_EMBEDDING_PRICE_PER_MTOK`) — adjust them to your actual pricing.
-Embedding tokens aren't reported by the API, so they are estimated at
-~4 characters per token.
-
-**Knowledge base.** The dashboard's *Knowledge base* card uploads documents
-and books (PDF, EPUB, DOCX, TXT, MD) for the chatbot. Pick *Document* or
-*Book*, optionally a title and author (otherwise taken from the file's own
-metadata, then its name), and upload. The API answers `202` immediately;
-text extraction, chunking and embedding run as a FastAPI background task
-while the table shows *Processing · n%*. A document is only searchable once
-it is *Ready*. Tables and images inside the files are read too (the table
-shows e.g. *3 tables · 5 images read*); scanned PDFs are transcribed by
-Gemini. Duplicates (same file content) are refused; failed uploads show the
-reason and can be re-indexed from the stored original; *Delete* removes the
-document, its chunks and the stored file. Everything the admin role can do:
-[docs/ROLES.md](docs/ROLES.md).
-
-Size limits: `KB_MAX_DOCUMENT_MB` (25) and `KB_MAX_BOOK_MB` (100) in
-`backend/.env`; images read per file: `KB_MAX_VISION_CALLS` (60, one Gemini
-call each, counted in the usage view). Supabase Storage's free plan caps files at **50 MB**: a
-larger book is still indexed, but its original isn't stored, so it can't be
-re-indexed later. Background tasks live in the API process: an upload cut
-off by a restart is marked *Failed* at the next startup — re-index it. Run
-the API with a single worker process (the default) for that reason.
-
-### Security
-
-- Frontend auth via `@supabase/ssr`; Next.js `proxy.ts` guards every private
-  route; the `(app)` layout additionally enforces the doctor/patient boundary.
-- All API calls carry the Supabase access token; FastAPI verifies it and
-  enforces roles (`require_doctor` for predictions, eye scans, panel admin).
-- All writes go through the backend with the service-role key; RLS policies
-  (`0001_init.sql`) protect direct client reads: patients read only their own
-  data (confirmed predictions only, `0007`), doctors only their panel's;
-  admin endpoints are role-gated (`require_admin`) and `gemini_usage` has RLS
-  enabled with no policies (backend-only).
-- Roles can't be self-assigned (`0008`): signups are doctor or patient only,
-  and users can edit only their name, phone, birth date and sex. The admin
-  role is granted from the SQL Editor.
-- Signup is open, so anyone can register as a doctor and link patients by
-  email — see the open items in
-  [docs/RAG_ARCHITECTURE.md](docs/RAG_ARCHITECTURE.md#code-review).
-- Storage buckets are private; images are served via 24h signed URLs.
-
----
-
-## Running for a demo
+Launch the development server:
 
 ```bash
-# terminal 1 — backend
-cd backend && .venv\Scripts\activate && uvicorn app.main:app --reload --port 8000
-# terminal 2 — frontend
-cd frontend && npm run dev
+npm run dev
 ```
 
-Open http://localhost:3000 → register (choose Doctor) → add a patient →
-run a diabetes prediction → on the report, **Confirm & validate** (and try
-**Export PDF**). Sign in as the patient (temp password, or the invitation
-email's set-password page) → **My history** shows the confirmed diagnostic.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Troubleshooting
+---
 
-| Symptom                                                              | Fix                                                                                                                                                                     |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Supabase is not configured`                                       | Fill`backend/.env` (and `frontend/.env.local`)                                                                                                                      |
-| 401 from API                                                         | Frontend env missing or token expired — re-login                                                                                                                       |
-| 403 Doctor access only                                               | Signed in as patient; use a doctor account                                                                                                                              |
-| 503 model not installed                                              | Add`model.<ext>` to `backend/models_app/<scan>/`                                                                                                                    |
-| Chat finds nothing in the KB                                         | Upload documents from the admin dashboard, or run`python scripts/ingest_kb.py`                                                                                        |
-| KB upload/list fails,`column … does not exist`                    | Apply migrations`0005_kb_uploads.sql` and `0006_kb_rich_content.sql`                                                                                                |
-| Report page: "Prediction review isn't set up"                        | Apply`0007_prediction_review.sql`                                                                                                                                     |
-| Invite email not arriving                                            | Supabase free SMTP is rate-limited; use the temp-password method or set custom SMTP                                                                                     |
-| Invite link opens the home page / "This link can't be used"          | Add`FRONTEND_URL/**` to Auth → URL Configuration → Redirect URLs; links expire after 24 h and work once — patient can use *Forgot password?*                     |
-| A patient doesn't see a prediction                                   | It is still*pending*: confirm it on the report page                                                                                                                   |
-| PDF uploaded, "images skipped"                                       | Raise`KB_MAX_VISION_CALLS` in `backend/.env`, then *Re-index*                                                                                                     |
-| Document shows "Not searched: embedded by another model"             | It was indexed with the other`EMBEDDING_PROVIDER` — *Re-index* it                                                                                                  |
-| Chat: "knowledge-base search function is missing"                    | Apply`0009_embedding_model.sql`                                                                                                                                       |
-| API log: "local model unavailable"                                   | `python -m pip install -r requirements.txt` (fastembed); the first start needs internet to download the model                                                         |
-| Windows:`DLL load failed … stratégie de contrôle d'application` | Smart App Control blocked a native module of a freshly installed package; retry, or use a version with wider distribution (e.g.`numba<0.64`, `scikit-learn==1.8.0`) |
+## Clinical Workflows & How It Works
+
+### 1. Doctor Diabetes Risk Prediction
+
+- **Input Parameters:** 8 clinical features (`gender`, `age`, `hypertension`, `heart_disease`, `smoking_history`, `bmi`, `HbA1c_level`, `blood_glucose_level`).
+- **Model Execution:** Evaluated with an XGBoost classifier with an optimized decision threshold of `0.395`. Features are scaled with the exact training pipeline parameters.
+- **Prediabetic Rule Override:** Automatically flags patients with HbA1c 5.7–6.5% and fasting blood glucose 100–126 mg/dL as Prediabetic regardless of probability.
+- **Explainability:** SHAP values calculate the exact positive or negative contribution of each factor, generating an annotated waterfall plot stored securely in Supabase Storage.
+- **Clinical Interpretation:** Gemini synthesizes a contextual clinical summary explaining the risk factors in natural language (available in English and French).
+- **Review & Validation:** Every prediction is saved as `pending`. Only once the doctor clicks **Confirm & Validate** does the prediction become visible on the patient's portal.
+- **PDF Export:** Doctors and patients can export a standardized clinical report in English or French generated via ReportLab.
+
+### 2. Computer Vision Complication Screening
+
+- **Diabetic Foot Ulcer Detection:** Evaluates uploaded foot images to detect ulceration or pre-ulcerative lesions. Hosted on a private Hugging Face ZeroGPU space to maintain high responsiveness without backend memory bloat.
+- **Retinopathy Classification:** Doctor-exclusive tool for grading fundus examination photographs.
+- **Acanthosis Nigricans (Neck Check):** Visual check for cutaneous hyperpigmentation associated with severe insulin resistance.
+
+### 3. Grounded RAG Chatbot
+
+- **Query Condensation:** Conversational context is condensed into a standalone query using LangGraph.
+- **Semantic Vector Search:** Queries are embedded using `gemini-embedding-001` and matched via cosine similarity in pgvector against pre-indexed medical textbooks and guidelines.
+- **Citation Guardrails:** The response must cite authoritative passages with exact chapter and page metadata. If no verified information is found, the assistant honestly declines to answer rather than hallucinating.
+
+---
+
+## Honest Handling of In-Progress & Future Features
+
+In accordance with transparent engineering principles:
+
+1. **Acanthosis Nigricans Dataset Expansion:** The neck screening model is currently undergoing retraining with higher demographic diversity; if a weight checkpoint is unavailable, the API returns a structured 503 fallback message rather than crashing.
+2. **Production SMTP:** Email invitations and password resets in development use Supabase's built-in mailer. For commercial production scale, an external SMTP provider (such as Resend or SendGrid) should be configured to prevent free-tier rate limits.
+3. **Clinical Regulatory Clearance:** DiabAI is an assistive screening tool designed to augment healthcare professionals and does not replace formal medical diagnosis by a licensed physician.
+
+---
+
+## Documentation Links
+
+- [Roles &amp; Permissions (Admin, Doctor, Patient)](docs/ROLES.md)
+- [RAG Architecture, Vector Search &amp; Code Review](docs/RAG_ARCHITECTURE.md)
+- [Hugging Face Models Repository](https://huggingface.co/BenkraoudaAmine/diabai-models)
+- [Hugging Face Vision Space (ZeroGPU)](https://huggingface.co/spaces/BenkraoudaAmine/diabai-vision)
+
+---
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
