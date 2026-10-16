@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     # Hugging Face
     hf_token: str = ""
     hf_model_repo_id: str = "BenkraoudaAmine/diabai-models"
+    hf_vision_space: str = "BenkraoudaAmine/diabai-vision"
 
     @property
     def cors_origin_list(self) -> list[str]:

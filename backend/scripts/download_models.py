@@ -10,9 +10,8 @@ MODELS_APP = BACKEND_DIR / "models_app"
 DEFAULT_REPO_ID = "BenkraoudaAmine/diabai-models"
 
 # Remote path inside HuggingFace repo -> Local target path
+# Vision models are now hosted on Hugging Face Space (BenkraoudaAmine/diabai-vision)
 MODEL_FILES = {
-    "foot/model.onnx": MODELS_APP / "foot" / "model.onnx",
-    "eye/model.onnx": MODELS_APP / "eye" / "model.onnx",
     "diabetes/xgb_diabetes.pkl": MODELS_APP / "diabetes" / "xgb_diabetes.pkl",
     "diabetes/scaler.pkl": MODELS_APP / "diabetes" / "scaler.pkl",
     "diabetes/xgb_threshold.pkl": MODELS_APP / "diabetes" / "xgb_threshold.pkl",

@@ -27,12 +27,16 @@ Optional labels.json next to the model overrides any config key:
 
 import io
 import json
+import os
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable
 
 import cv2
 import numpy as np
+
+from app.config import get_settings
 
 MODELS_DIR = Path(__file__).resolve().parents[2] / "models_app"
 SCAN_TYPES = ("foot", "neck", "eye")
@@ -111,6 +115,9 @@ def _find_model_file(scan_type: str) -> Path | None:
 
 
 def availability() -> dict[str, bool]:
+    s = get_settings()
+    if s.hf_vision_space:
+        return {"foot": True, "eye": True, "neck": False}
     return {st: _find_model_file(st) is not None for st in SCAN_TYPES}
 
 
@@ -298,11 +305,74 @@ def _load(scan_type: str) -> tuple[Callable[[np.ndarray], np.ndarray], dict[str,
     raise RuntimeError(f"Unsupported model format: {model_file.name}")
 
 
+# ── remote inference via Hugging Face Space ─────────────────────────────────
+
+_HF_CLIENT = None
+
+
+def _get_hf_client():
+    global _HF_CLIENT
+    if _HF_CLIENT is not None:
+        return _HF_CLIENT
+    from gradio_client import Client
+
+    settings = get_settings()
+    space_id = settings.hf_vision_space
+    token = settings.hf_token or os.getenv("HF_TOKEN") or None
+    _HF_CLIENT = Client(space_id, token=token)
+    return _HF_CLIENT
+
+
+def _predict_remote(scan_type: str, image_bytes: bytes) -> dict:
+    from gradio_client import handle_file
+
+    try:
+        client = _get_hf_client()
+    except Exception as exc:
+        raise RuntimeError(
+            f"Vision service is connecting/waking up on Hugging Face: {exc}"
+        ) from exc
+
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        tmp.write(image_bytes)
+        tmp_path = tmp.name
+
+    try:
+        res = client.predict(
+            image=handle_file(tmp_path),
+            scan_type=scan_type,
+            api_name="/predict",
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Inference failed on Hugging Face Space: {exc}"
+        ) from exc
+    finally:
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except Exception:
+            pass
+
+    if isinstance(res, dict):
+        if "disclaimer" not in res:
+            res["disclaimer"] = DISCLAIMER
+        if "top_class" not in res:
+            res["top_class"] = res.get("label")
+        return res
+    raise RuntimeError(f"Unexpected response from vision service: {res}")
+
+
 # ── public API ───────────────────────────────────────────────────────────────
 
 def predict(scan_type: str, image_bytes: bytes) -> dict:
     if scan_type not in SCAN_TYPES:
         raise ValueError(f"Unknown scan type: {scan_type}")
+
+    settings = get_settings()
+    if settings.hf_vision_space:
+        return _predict_remote(scan_type, image_bytes)
+
     predict_fn, cfg = _load(scan_type)  # may raise NotInstalled
 
     try:

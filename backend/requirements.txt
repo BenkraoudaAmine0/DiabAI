@@ -35,5 +35,4 @@ pillow>=10.2
 onnxruntime>=1.17
 opencv-python-headless
 huggingface-hub>=0.20
-
-# onnxruntime loads foot/model.onnx and eye/model.onnx without heavy tensorflow
+gradio_client>=2.7.0
