@@ -91,7 +91,15 @@ def _find_model_file(scan_type: str) -> Path | None:
     folder = MODELS_DIR / scan_type
     if not folder.exists():
         return None
-    # exact drop-in name first, then any single supported file in the folder
+    # 1. Exact model.onnx first
+    onnx_file = folder / "model.onnx"
+    if onnx_file.exists():
+        return onnx_file
+    # 2. Any other .onnx in the folder
+    for f in sorted(folder.iterdir()):
+        if f.is_file() and f.suffix.lower() == ".onnx":
+            return f
+    # 3. Fallback to other extensions only if no ONNX is found
     for ext in SUPPORTED_EXTS:
         candidate = folder / f"model{ext}"
         if candidate.exists():

@@ -27,6 +27,15 @@ def ensure_models(token: str | None = None, repo_id: str | None = None) -> bool:
     token = token or os.getenv("HF_TOKEN")
     repo_id = repo_id or os.getenv("HF_MODEL_REPO_ID", DEFAULT_REPO_ID)
 
+    # Remove legacy heavy .h5 files that cause OOM on 512MB RAM servers
+    for legacy in [MODELS_APP / "foot" / "Diabetic_Foot_UIcer1.h5", MODELS_APP / "eye" / "Resnet50_bestqwk.h5"]:
+        if legacy.exists():
+            try:
+                legacy.unlink()
+                print(f"[models] Removed legacy {legacy.name} to avoid memory crash.")
+            except Exception:
+                pass
+
     missing = [
         (repo_path, local_path)
         for repo_path, local_path in MODEL_FILES.items()
