@@ -3,9 +3,12 @@
 import os
 from pathlib import Path
 from huggingface_hub import HfApi
+from dotenv import load_dotenv
 
-REPO_ID = "BenkraoudaAmine/diabai-models"
-UPLOAD_TOKEN = ""
+load_dotenv()
+
+REPO_ID = os.getenv("HF_MODEL_REPO_ID")
+UPLOAD_TOKEN = os.getenv("HF_TOKEN")
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 MODELS_APP = BACKEND_DIR / "models_app"
