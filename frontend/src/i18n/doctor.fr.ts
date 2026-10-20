@@ -487,6 +487,23 @@ const drFr: Record<string, string> = {
   "dr.nav.section": "Espace clinique",
   "dr.bell": "Évaluations à valider : {n}",
   "pp.btnScans": "Photo pied & cou",
+  "dr.pending.chip": "En attente de validation",
+  "dr.pending.chipHint": "Un administrateur vérifie votre compte",
+  "dr.pending.title": "Votre compte est en attente de validation",
+  "dr.pending.text": "Un administrateur vérifie vos informations professionnelles. En attendant, vous pouvez découvrir DiabAI en tant qu’invité ; les dossiers patients et les outils cliniques s’ouvrent dès que votre compte est validé.",
+  "dr.pending.details": "Les informations vérifiées",
+  "dr.pending.license": "N° d’inscription à l’Ordre",
+  "dr.pending.facility": "Établissement",
+  "dr.pending.email": "E-mail",
+  "dr.pending.missing": "Non renseigné",
+  "dr.pending.edit": "Compléter dans les paramètres",
+  "dr.pending.unlock": "Ce qui sera débloqué",
+  "dr.pending.f.patients": "Votre patientèle et leurs dossiers",
+  "dr.pending.f.risk": "L’évaluation du risque de diabète, expliquée",
+  "dr.pending.f.retina": "Le dépistage rétinien",
+  "dr.pending.f.foot": "Le dépistage photo pied & cou",
+  "dr.pending.f.chat": "L’assistant IA clinique",
+  "dr.pending.meanwhile": "En attendant, vous pouvez consulter la rubrique",
 };
 
 export default drFr;

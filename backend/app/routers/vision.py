@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from app.auth import AuthUser, get_current_user
+from app.auth import AuthUser, PENDING_DOCTOR, PENDING_DOCTOR_DETAIL, get_current_user
 from app.schemas import ScanResult, ScanReviewRequest
 from app.services import vision_service
 from app.services.notification_service import notify
@@ -27,6 +27,8 @@ async def scan(
     patient_id: UUID | None = Form(default=None),
     user: AuthUser = Depends(get_current_user),
 ) -> ScanResult:
+    if user.role == PENDING_DOCTOR:
+        raise HTTPException(status_code=403, detail=PENDING_DOCTOR_DETAIL)
     if scan_type not in vision_service.SCAN_TYPES:
         raise HTTPException(
             status_code=400,
@@ -136,6 +138,8 @@ def review_scan(
 ) -> dict:
     """Clinician decision on a scan: confirm or modify the model's grade, and
     optionally refer the patient to a specialist (needs migration 0012)."""
+    if user.role == PENDING_DOCTOR:
+        raise HTTPException(status_code=403, detail=PENDING_DOCTOR_DETAIL)
     if user.role not in ("doctor", "admin"):
         raise HTTPException(status_code=403, detail="Doctor access only")
     svc = get_service_client()

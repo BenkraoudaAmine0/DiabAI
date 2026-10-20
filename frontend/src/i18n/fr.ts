@@ -540,6 +540,7 @@ const fr: Record<string, string> = {
   "role.doctor": "Médecin",
   "role.patient": "Patient",
   "role.admin": "Administrateur",
+  "role.doctor_pending": "Médecin (en attente de validation)",
   // prochaine visite (médecin › fiche patient)
   "visit.title": "Prochaine visite",
   "visit.current": "Prévue le {when}. Le patient la voit sur son accueil.",
@@ -584,6 +585,7 @@ const fr: Record<string, string> = {
   "scan.rev.change": "Modifier",
   "shell.collapse": "Réduire le menu",
   "shell.expand": "Agrandir le menu",
+  "shell.locked": "disponible après validation de votre compte",
 };
 
 export default fr;

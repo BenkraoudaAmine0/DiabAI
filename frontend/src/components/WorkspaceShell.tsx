@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X, type LucideIcon } from "lucide-react";
+import { Bell, Lock, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X, type LucideIcon } from "lucide-react";
 
 import Logo from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,15 @@ export interface ShellNavItem {
   icon: LucideIcon;
   also?: string[]; // other paths that highlight this item
   exact?: boolean; // highlight on the exact path only (a section home)
+  locked?: boolean; // shown but not usable yet (a doctor awaiting approval)
+  badge?: number; // a count to act on, e.g. doctors awaiting approval
+}
+
+export interface ShellBell {
+  href: string;
+  count: number;
+  label: string;
+  items?: { href: string; label: string; count: number }[]; // opens a short list instead
 }
 
 export interface ShellLink {
@@ -57,6 +66,70 @@ function writeCollapsed(value: boolean) {
 export function isNavActive(item: ShellNavItem, pathname: string): boolean {
   const under = (p: string) => pathname === p || pathname.startsWith(p + "/");
   return (item.exact ? pathname === item.href : under(item.href)) || (item.also ?? []).some(under);
+}
+
+function BellBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-status-critical px-1 text-[10px] font-bold text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+/** The bell: a link, or a short list when it gathers several kinds of item. */
+function BellMenu({ bell }: { bell: ShellBell }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const cls = "relative flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900";
+  if (!bell.items?.length) {
+    return (
+      <Link href={bell.href} aria-label={bell.label} title={bell.label} className={cls}>
+        <Bell size={18} />
+        <BellBadge count={bell.count} />
+      </Link>
+    );
+  }
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label={bell.label} title={bell.label} className={cls}>
+        <Bell size={18} />
+        <BellBadge count={bell.count} />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-11 z-40 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+          {bell.items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              <span>{item.label}</span>
+              {item.count > 0 && (
+                <span className="rounded-full bg-status-critical px-2 py-0.5 text-[11px] font-bold text-white">{item.count}</span>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** Avatar · name · role in the top bar, with the account menu. */
@@ -170,22 +243,35 @@ function SidebarBody({
           {nav.map((item) => {
             const on = isNavActive(item, pathname);
             const IconCmp = item.icon;
+            const hint = item.locked ? `${item.label} · ${t("shell.locked")}` : collapsed ? item.label : undefined;
             return (
               <li key={item.href}>
                 <Link
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={on ? "page" : undefined}
-                  aria-label={collapsed ? item.label : undefined}
-                  title={collapsed ? item.label : undefined}
-                  className={`flex items-center gap-3 rounded-lg py-2.5 text-sm transition-colors ${collapsed ? "justify-center" : "px-4"} ${
+                  aria-label={hint}
+                  title={hint}
+                  className={`relative flex items-center gap-3 rounded-lg py-2.5 text-sm transition-colors ${collapsed ? "justify-center" : "px-4"} ${
                     on
                       ? "bg-white font-bold text-brand shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
-                      : "font-medium text-slate-700 hover:bg-white/60 hover:text-slate-900"
+                      : item.locked
+                        ? "font-medium text-slate-400 hover:bg-white/40"
+                        : "font-medium text-slate-700 hover:bg-white/60 hover:text-slate-900"
                   }`}
                 >
                   <IconCmp size={18} strokeWidth={1.8} className="shrink-0" />
                   {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && item.locked && <Lock size={14} className="ml-auto shrink-0" aria-hidden />}
+                  {!!item.badge && (
+                    <span
+                      className={`flex min-w-[20px] items-center justify-center rounded-full bg-status-critical px-1.5 text-[11px] font-bold text-white ${
+                        collapsed ? "absolute right-1 top-1" : "ml-auto"
+                      }`}
+                    >
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  )}
                 </Link>
               </li>
             );
@@ -211,6 +297,7 @@ export default function WorkspaceShell({
   menu,
   bell,
   topbarExtra,
+  statusChip,
   sidebarFooter,
   footer,
   contentClassName = "",
@@ -222,8 +309,9 @@ export default function WorkspaceShell({
   title: string;
   roleLabel: string;
   menu: ShellLink[];
-  bell?: { href: string; count: number; label: string };
+  bell?: ShellBell;
   topbarExtra?: React.ReactNode;
+  statusChip?: React.ReactNode; // e.g. a doctor's "awaiting approval" badge
   sidebarFooter?: React.ReactNode;
   footer?: React.ReactNode;
   contentClassName?: string;
@@ -327,22 +415,9 @@ export default function WorkspaceShell({
             {topbarExtra && <div className="hidden min-w-0 flex-1 md:block">{topbarExtra}</div>}
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {statusChip}
             <LangToggle className="hidden sm:flex" />
-            {bell && (
-              <Link
-                href={bell.href}
-                aria-label={bell.label}
-                title={bell.label}
-                className="relative flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900"
-              >
-                <Bell size={18} />
-                {bell.count > 0 && (
-                  <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-status-critical px-1 text-[10px] font-bold text-white">
-                    {bell.count > 99 ? "99+" : bell.count}
-                  </span>
-                )}
-              </Link>
-            )}
+            {bell && <BellMenu bell={bell} />}
             <span className="hidden h-7 w-px bg-slate-200 sm:block" aria-hidden />
             <ProfileMenu roleLabel={roleLabel} links={menu} />
           </div>

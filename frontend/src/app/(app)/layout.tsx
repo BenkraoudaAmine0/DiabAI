@@ -7,6 +7,16 @@ import AppShell from "@/components/AppShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/i18n";
 
+/** Where a signed-in user belongs when the path is another role's area
+ *  (admin has full doctor-level access + its own area); null = stay. */
+function homeIfMisplaced(role: string, pathname: string): string | null {
+  const doctorLevel = role === "doctor" || role === "admin";
+  if (pathname.startsWith("/admin") && role !== "admin") return doctorLevel ? "/doctor/dashboard" : "/patient";
+  if (pathname.startsWith("/doctor") && !doctorLevel) return "/patient";
+  if (pathname.startsWith("/patient") && role !== "patient") return role === "admin" ? "/admin/dashboard" : "/doctor/dashboard";
+  return null;
+}
+
 /** Layout for every signed-in area: waits for the profile, enforces the
  * doctor/patient boundary, then renders inside the app shell. */
 export default function AuthedLayout({
@@ -19,21 +29,12 @@ export default function AuthedLayout({
   const router = useRouter();
   const pathname = usePathname();
 
+  // another role's area: go to your own (and render nothing of it meanwhile)
+  const redirectTo = !loading && session && profile ? homeIfMisplaced(profile.role, pathname) : null;
+
   useEffect(() => {
-    if (loading || !session) return;
-    if (!profile) return;
-    // admin has full doctor-level access + its own area
-    const doctorLevel = profile.role === "doctor" || profile.role === "admin";
-    if (pathname.startsWith("/admin") && profile.role !== "admin") {
-      router.replace(doctorLevel ? "/doctor/dashboard" : "/patient");
-    }
-    if (pathname.startsWith("/doctor") && !doctorLevel) {
-      router.replace("/patient");
-    }
-    if (pathname.startsWith("/patient") && profile.role !== "patient") {
-      router.replace(profile.role === "admin" ? "/admin/dashboard" : "/doctor/dashboard");
-    }
-  }, [loading, session, profile, pathname, router]);
+    if (redirectTo) router.replace(redirectTo);
+  }, [redirectTo, router]);
 
   // signed in, but no profile row: without this the spinner never stops
   if (session && !loading && !profile && profileError) {
@@ -59,7 +60,7 @@ export default function AuthedLayout({
     );
   }
 
-  if (!session || loading || !profile) {
+  if (!session || loading || !profile || redirectTo) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">

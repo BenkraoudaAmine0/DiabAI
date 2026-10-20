@@ -78,7 +78,7 @@ const publicFr: Record<string, string> = {
   "pub.reg.passwordPh": "Au moins 8 caractères",
   "pub.reg.specific": "Informations selon le rôle",
   "pub.reg.forDoctors": "Pour les médecins",
-  "pub.reg.forDoctorsSub": "Obligatoire si « Médecin » est choisi",
+  "pub.reg.forDoctorsSub": "Obligatoire si « Médecin » est choisi. Un administrateur le vérifie avant d’ouvrir l’accès complet.",
   "pub.reg.license": "N° d’inscription à l’Ordre",
   "pub.reg.licensePh": "Saisissez votre numéro",
   "pub.reg.facility": "Établissement de soins",

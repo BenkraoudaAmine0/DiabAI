@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app.auth import AuthUser, get_current_user
+from app.auth import AuthUser, PENDING_DOCTOR, get_current_user
 from app.services.audit_service import audit_by
 from app.services.panel import get_profile
 from app.services.supabase_client import get_service_client
@@ -54,7 +54,8 @@ def me(user: AuthUser = Depends(get_current_user)) -> dict:
 
 @router.put("/professional")
 def update_professional(req: ProfessionalRequest, user: AuthUser = Depends(get_current_user)) -> dict:
-    if user.role not in ("doctor", "admin"):
+    # a doctor awaiting approval completes these details for the admin
+    if user.role not in ("doctor", "admin", PENDING_DOCTOR):
         raise HTTPException(status_code=403, detail="Doctor access only")
     values = {
         k: (v.strip() or None) if isinstance(v, str) else v

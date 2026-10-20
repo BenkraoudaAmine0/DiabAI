@@ -237,12 +237,22 @@ def invite_user(req: InviteRequest, user: AuthUser = Depends(require_admin)) -> 
             raise HTTPException(status_code=409, detail="An account already exists for this email.") from exc
         raise HTTPException(status_code=502, detail=f"Supabase invite failed: {exc}") from exc
     uid = str(res.user.id)
-    svc.table("profiles").upsert(
-        {"id": uid, "email": req.email, "full_name": req.full_name, "role": req.role, "created_by": user.id},
-        on_conflict="id",
-    ).execute()
+    row = {"id": uid, "email": req.email, "full_name": req.full_name, "role": req.role, "created_by": user.id}
+    # a doctor the admin invites is approved by that invitation
+    _upsert_profile(svc, {**row, **_approval(user)} if req.role == "doctor" else row, fallback=row)
     audit_by(user, "user.invite", "profile", uid, {"email": req.email, "role": req.role})
     return {"id": uid, "email": req.email, "role": req.role, "status": "invited"}
+
+
+def _approval(admin: AuthUser) -> dict:
+    return {"verified_at": datetime.now(timezone.utc).isoformat(), "verified_by": admin.id}
+
+
+def _upsert_profile(svc, row: dict, fallback: dict) -> None:
+    try:
+        svc.table("profiles").upsert(row, on_conflict="id").execute()
+    except Exception:  # before migration 0013 (no verified_* columns)
+        svc.table("profiles").upsert(fallback, on_conflict="id").execute()
 
 
 class RoleRequest(BaseModel):
@@ -260,7 +270,11 @@ def change_role(user_id: UUID, req: RoleRequest, user: AuthUser = Depends(requir
         raise HTTPException(status_code=404, detail="User not found")
     before = rows[0]["role"]
     if before != req.role:
-        svc.table("profiles").update({"role": req.role}).eq("id", uid).execute()
+        change = {"role": req.role}
+        try:  # making someone a doctor is the admin vouching for them
+            svc.table("profiles").update({**change, **_approval(user)} if req.role == "doctor" else change).eq("id", uid).execute()
+        except Exception:  # before migration 0013
+            svc.table("profiles").update(change).eq("id", uid).execute()
         audit_by(user, "user.role", "profile", uid, {"email": rows[0].get("email"), "from": before, "to": req.role})
     return {"id": uid, "role": req.role}
 
@@ -324,6 +338,22 @@ def admin_doctors(user: AuthUser = Depends(require_admin)) -> dict:
         },
         "verification_available": verification,
     }
+
+
+@router.get("/doctors/pending")
+def pending_doctors(user: AuthUser = Depends(require_admin)) -> dict:
+    """Doctors who signed up and wait for approval — the admin's bell and the
+    Doctors badge. Newest first."""
+    try:
+        rows = (
+            get_service_client().table("profiles")
+            .select("id, email, full_name, license_number, facility, specialty, created_at")
+            .eq("role", "doctor").is_("verified_at", "null")
+            .order("created_at", desc=True).limit(200).execute().data or []
+        )
+    except Exception:  # before migration 0013 there is no approval step
+        rows = []
+    return {"count": len(rows), "doctors": rows}
 
 
 class VerifyRequest(BaseModel):
