@@ -11,6 +11,11 @@ export interface Profile {
   created_by: string | null;
   created_at?: string;
   next_visit_at?: string | null; // migration 0011 — set by a doctor
+  // doctors (migration 0013): approved by an admin when verified_at is set
+  license_number?: string | null;
+  facility?: string | null;
+  specialty?: string | null;
+  verified_at?: string | null;
 }
 
 export interface TopFactor {

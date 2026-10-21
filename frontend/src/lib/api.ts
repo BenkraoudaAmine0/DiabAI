@@ -36,10 +36,18 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
       /* keep status text */
     }
     redirectForTwoFactor(res.status, detail);
+    if (res.status === 403 && detail === APPROVAL_PENDING && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(APPROVAL_REQUIRED)); // DoctorShell re-reads the profile
+    }
     throw new Error(detail);
   }
   return res;
 }
+
+/** backend app/auth.py PENDING_DOCTOR_DETAIL: a doctor whose account an admin
+ *  has not approved (or has revoked) */
+export const APPROVAL_PENDING = "Your doctor account is waiting for an administrator's approval.";
+export const APPROVAL_REQUIRED = "diabai:approval-required";
 
 /** The backend refuses a session that still needs its 2FA code (401), or a
  *  doctor/admin without 2FA when the admin policy requires it (403): send

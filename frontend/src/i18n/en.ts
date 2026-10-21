@@ -537,6 +537,7 @@ const en: Record<string, string> = {
   "role.doctor": "Doctor",
   "role.patient": "Patient",
   "role.admin": "Admin",
+  "role.doctor_pending": "Doctor (awaiting approval)",
   // next visit (doctor › patient profile)
   "visit.title": "Next visit",
   "visit.current": "Scheduled for {when}. The patient sees it on their home page.",
@@ -581,6 +582,7 @@ const en: Record<string, string> = {
   "scan.rev.change": "Change",
   "shell.collapse": "Collapse menu",
   "shell.expand": "Expand menu",
+  "shell.locked": "available once your account is approved",
 };
 
 export default en;

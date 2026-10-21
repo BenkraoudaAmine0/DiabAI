@@ -487,6 +487,23 @@ const drEn: Record<string, string> = {
   "dr.nav.section": "Clinical workspace",
   "dr.bell": "{n} assessments to review",
   "pp.btnScans": "Foot & neck photo",
+  "dr.pending.chip": "Awaiting approval",
+  "dr.pending.chipHint": "An administrator is checking your account",
+  "dr.pending.title": "Your account is waiting for approval",
+  "dr.pending.text": "An administrator is checking your medical credentials. Until then you can explore DiabAI as a guest; patient records and the clinical tools unlock as soon as your account is approved.",
+  "dr.pending.details": "The details we check",
+  "dr.pending.license": "Medical council number",
+  "dr.pending.facility": "Facility",
+  "dr.pending.email": "Email",
+  "dr.pending.missing": "Not provided",
+  "dr.pending.edit": "Complete in Settings",
+  "dr.pending.unlock": "What you’ll unlock",
+  "dr.pending.f.patients": "Your patient panel and their records",
+  "dr.pending.f.risk": "Diabetes risk assessment, explained",
+  "dr.pending.f.retina": "Retinal screening",
+  "dr.pending.f.foot": "Foot & neck photo screening",
+  "dr.pending.f.chat": "The clinical AI assistant",
+  "dr.pending.meanwhile": "Meanwhile, you can browse the",
 };
 
 export default drEn;

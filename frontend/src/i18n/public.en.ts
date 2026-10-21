@@ -78,7 +78,7 @@ const publicEn: Record<string, string> = {
   "pub.reg.passwordPh": "At least 8 characters",
   "pub.reg.specific": "Role-specific details",
   "pub.reg.forDoctors": "For doctors",
-  "pub.reg.forDoctorsSub": "Required when Doctor is selected",
+  "pub.reg.forDoctorsSub": "Required when Doctor is selected. An administrator checks it before giving full access.",
   "pub.reg.license": "Medical registration number",
   "pub.reg.licensePh": "Enter registration number",
   "pub.reg.facility": "Care facility",
