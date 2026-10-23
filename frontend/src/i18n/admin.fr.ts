@@ -366,6 +366,9 @@ const adminFr: Record<string, string> = {
   "adm.al.httpStatus": "Statut HTTP",
   "adm.al.user": "Utilisateur concerné",
   "adm.al.resolvedAt": "Résolue",
+  "adm.bell.all": "Notifications ({n})",
+  "adm.bell.alerts": "Alertes d’erreur ouvertes",
+  "adm.bell.doctors": "Médecins en attente de validation",
 };
 
 export default adminFr;

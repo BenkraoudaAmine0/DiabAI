@@ -19,7 +19,7 @@ from app.services.supabase_client import get_anon_client, get_service_client
 class AuthUser:
     id: str
     email: str
-    role: str  # "doctor" | "patient" | "admin"
+    role: str  # "doctor" | "patient" | "admin" | "doctor_pending"
     full_name: Optional[str] = None
     has_2fa: bool = False
 
@@ -36,6 +36,12 @@ def _aal(token: str) -> Optional[str]:
 
 
 PRIVILEGED_ROLES = ("admin", "doctor")
+# A doctor who signed up is a guest until an admin approves the account
+# (profiles.verified_at): their effective role is this one, so every
+# doctor-or-admin check refuses them by default.
+PENDING_DOCTOR = "doctor_pending"
+# frontend/src/lib/api.ts APPROVAL_PENDING matches this text exactly
+PENDING_DOCTOR_DETAIL = "Your doctor account is waiting for an administrator's approval."
 # reachable without 2FA even when the policy requires it, so the user can
 # open their settings and turn it on (enrolment itself talks to Supabase Auth)
 MFA_SETUP_PATHS = ("/api/me", "/api/notifications")
@@ -67,6 +73,25 @@ def forget_mfa_policy() -> None:
     _policy["checked_at"] = 0.0
 
 
+def _profile(user_id: str) -> dict:
+    """role, full_name and verified_at of the signed-in user."""
+    svc = get_service_client()
+    try:
+        return (
+            svc.table("profiles").select("role, full_name, verified_at")
+            .eq("id", user_id).single().execute().data
+        )
+    except Exception as exc:
+        if "verified_at" not in str(exc):
+            raise
+        # before migration 0013 there is no approval step
+        data = (
+            svc.table("profiles").select("role, full_name")
+            .eq("id", user_id).single().execute().data
+        )
+        return {**data, "verified_at": "before-0013"}
+
+
 def get_current_user(
     request: Request,
     authorization: Optional[str] = Header(default=None),
@@ -93,21 +118,16 @@ def get_current_user(
 
     role = "patient"
     full_name = None
+    verified = False
     try:
-        prof = (
-            get_service_client()
-            .table("profiles")
-            .select("role, full_name")
-            .eq("id", user.id)
-            .single()
-            .execute()
-        )
-        role = prof.data.get("role", "patient")
-        full_name = prof.data.get("full_name")
+        prof = _profile(user.id)
+        role = prof.get("role", "patient")
+        full_name = prof.get("full_name")
+        verified = bool(prof.get("verified_at"))
     except Exception:
-        # Profile row missing (migration not applied?) — fall back to metadata.
+        # Profile row missing: never take the role from the sign-up metadata
+        # (the user writes it) — act as a patient.
         meta = getattr(user, "user_metadata", None) or {}
-        role = meta.get("role", "patient")
         full_name = meta.get("full_name")
 
     if (
@@ -117,6 +137,9 @@ def get_current_user(
         and mfa_required_for_privileged()
     ):
         raise HTTPException(status_code=403, detail=MFA_SETUP_REQUIRED)
+
+    if role == "doctor" and not verified:
+        role = PENDING_DOCTOR
 
     return AuthUser(
         id=str(user.id),
@@ -128,6 +151,8 @@ def get_current_user(
 
 
 def require_doctor(user: AuthUser = Depends(get_current_user)) -> AuthUser:
+    if user.role == PENDING_DOCTOR:
+        raise HTTPException(status_code=403, detail=PENDING_DOCTOR_DETAIL)
     if user.role not in ("doctor", "admin"):
         raise HTTPException(status_code=403, detail="Doctor access only")
     return user

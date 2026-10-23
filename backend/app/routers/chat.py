@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.auth import AuthUser, get_current_user
+from app.auth import AuthUser, PENDING_DOCTOR, PENDING_DOCTOR_DETAIL, get_current_user
 from app.schemas import ChatRequest, ChatResponse, ChatSource
 from app.services import gemini_service, rag_service
 from app.services.clinical import age_from, clinical_status
@@ -111,6 +111,8 @@ def _patient_brief(svc, user: AuthUser, patient_id: str) -> str:
 def chat(
     req: ChatRequest, user: AuthUser = Depends(get_current_user)
 ) -> ChatResponse:
+    if user.role == PENDING_DOCTOR:
+        raise HTTPException(status_code=403, detail=PENDING_DOCTOR_DETAIL)
     svc = get_service_client()
     session_id = str(req.session_id) if req.session_id else None
     history: list[dict] = []

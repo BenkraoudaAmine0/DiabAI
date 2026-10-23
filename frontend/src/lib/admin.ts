@@ -286,3 +286,6 @@ export function auditTargetHref(e: Pick<AuditEvent, "target_type" | "target_role
   if (e.target_type === "model") return "/admin/models";
   return null;
 }
+
+/** Fired after an admin approves or revokes a doctor (bell + badge refresh). */
+export const DOCTORS_CHANGED = "diabai:doctors-changed";

@@ -23,7 +23,7 @@ import {
 } from "@/components/admin/ui";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
-import type { DoctorsResponse } from "@/lib/admin";
+import { DOCTORS_CHANGED, type DoctorsResponse } from "@/lib/admin";
 
 /** Figma 05 Admin Screens · Doctors (109:30436). */
 function AdminDoctorsPageContent() {
@@ -32,7 +32,11 @@ function AdminDoctorsPageContent() {
   const params = useSearchParams();
   const [q, setQ] = useState(() => params.get("q") ?? ""); // ?q= from the audit log / alerts
   const [specialty, setSpecialty] = useState("all");
-  const [state, setState] = useState<"all" | "verified" | "pending">("all");
+  // ?state=pending from the admin bell / the Doctors badge
+  const [state, setState] = useState<"all" | "verified" | "pending">(() => {
+    const wanted = params.get("state");
+    return wanted === "pending" || wanted === "verified" ? wanted : "all";
+  });
   const [inviting, setInviting] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -58,6 +62,7 @@ function AdminDoctorsPageContent() {
       await api(`/api/admin/doctors/${id}/verify`, { method: "PUT", body: JSON.stringify({ verified }) });
       setMsg({ ok: true, text: t(verified ? "adm.doc.verifiedMsg" : "adm.doc.revokedMsg", { name }) });
       reload();
+      window.dispatchEvent(new Event(DOCTORS_CHANGED)); // the bell and the Doctors badge
     } catch (e) {
       setMsg({ ok: false, text: e instanceof Error ? e.message : t("common.error") });
     }
