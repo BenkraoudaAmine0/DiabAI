@@ -44,7 +44,7 @@ Designed for clinicians, endocrinologists, and individuals at risk of diabetes.
 
 ## 5. Demo Video
 
-- **Video Walkthrough (YouTube / Google Drive):** [Watch DiabAI Demo Video](https://youtu.be/placeholder-diabai-demo) *(3-minute full clinical workflow demonstration: doctor prediction, SHAP waterfall, Gemini interpretation, PDF export, patient foot ulcer check, and grounded RAG chatbot).*
+- **Video Walkthrough (YouTube / Google Drive):** [Watch DiabAI Demo Video](https://drive.google.com/drive/folders/1YadfmvTskZxQA6iu-qity7yRKLGqHXzr?usp=sharing) *(3-minute full clinical workflow demonstration: doctor prediction, SHAP waterfall, Gemini interpretation, PDF export, patient foot ulcer check, and grounded RAG chatbot).*
 
 ---
 
