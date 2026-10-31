@@ -24,6 +24,8 @@ Designed for clinicians, endocrinologists, and individuals at risk of diabetes.
 - **API Status & Health Check:** [https://diabai-9iy5.onrender.com/api/health](https://diabai-9iy5.onrender.com/api/health)
 - **Computer Vision Inference (Hugging Face ZeroGPU):** [https://huggingface.co/spaces/BenkraoudaAmine/diabai-vision](https://huggingface.co/spaces/BenkraoudaAmine/diabai-vision)
 
+> **Note on cold starts:** Because of how the backend is hosted (Render), it goes to sleep when idle. The first request can take **1–2 minutes** while the server wakes up. The AI models (risk prediction and the Hugging Face ZeroGPU vision models) can also take **about a minute** to load on first use. After that, responses are fast.
+
 ### Demo Accounts for Evaluators
 
 | Role              | Email                       | Password               | Notes                                                                                |
@@ -50,8 +52,10 @@ Designed for clinicians, endocrinologists, and individuals at risk of diabetes.
 
 ## 6. Team Members & Roles
 
-- **Mohamed Amine Benkraouda** (`BenkraoudaAmine0`): Machine learning engineering (XGBoost, SHAP explainability, ResNet ONNX vision models), FastAPI backend architecture, LangGraph RAG pipeline, Supabase database schemas & migrations, and Hugging Face ZeroGPU inference service.
-- **Abdelhak Hamzi** (`abdelhak0999`): Frontend architecture (Next.js 16, TypeScript, Tailwind CSS), Figma UI/UX redesign, responsive patient portal & doctor workspace shells, client-side photo workflows, and bilingual (English/French) internationalization.
+- **Neila Djakour**: Medical student; came up with the project idea.
+- **Mohamed Amine Benkraouda** (`BenkraoudaAmine0`): Project manager; trained the AI models, built the API core and deployed the app.
+- **Abdelhak Hamzi** (`abdelhak0999`): Full-stack developer; built the frontend, the backend and the foot photo screening with doctor review.
+- **Fatima Kassouar**: UI/UX designer; designed the app's interface.
 
 ---
 
