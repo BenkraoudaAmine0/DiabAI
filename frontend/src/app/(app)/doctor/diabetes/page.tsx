@@ -97,48 +97,55 @@ function clearDraft(patientId: string) {
 function Field({
   label,
   unit,
+  placeholder,
   value,
   onChange,
+  onBlur,
   invalid,
   hint,
   mono = true,
 }: {
   label: string;
   unit?: string;
+  placeholder?: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   invalid?: boolean;
   hint?: string;
   mono?: boolean;
 }) {
   return (
     <label className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <span className={`text-[13px] font-semibold ${invalid ? "text-status-critical" : "text-slate-900"}`}>{label}</span>
+      <span className={`truncate text-[13px] font-semibold ${invalid ? "text-status-critical" : "text-slate-900"}`} title={label}>
+        {label}
+      </span>
       <span
-        className={`flex items-center justify-between gap-2 rounded-lg border p-3 focus-within:ring-2 ${
+        className={`flex h-11 items-center justify-between gap-2 rounded-lg border px-3.5 transition-all focus-within:ring-2 ${
           invalid
             ? "border-status-critical bg-[#fef2f2] focus-within:ring-status-critical/20"
-            : "border-slate-200 bg-slate-50 focus-within:border-brand focus-within:ring-brand/15"
+            : "border-slate-200 bg-slate-50 focus-within:border-brand focus-within:bg-white focus-within:ring-brand/15"
         }`}
       >
         <input
           type="number"
           inputMode="decimal"
           step="any"
+          placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           aria-invalid={invalid || undefined}
-          className={`w-full min-w-0 bg-transparent text-sm font-semibold outline-none ${mono ? "font-mono" : ""} ${
-            invalid ? "text-status-critical" : "text-slate-900"
-          }`}
+          className={`w-full min-w-0 bg-transparent text-sm font-semibold outline-none placeholder:font-normal placeholder:text-slate-400 ${
+            mono ? "font-mono" : ""
+          } ${invalid ? "text-status-critical" : "text-slate-900"}`}
         />
-        {invalid ? (
-          <CircleAlert size={14} className="shrink-0 text-status-critical" />
-        ) : (
-          unit && <span className="shrink-0 text-xs text-slate-500">{unit}</span>
-        )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {unit && <span className="text-xs font-medium text-slate-500 select-none">{unit}</span>}
+          {invalid && <CircleAlert size={15} className="shrink-0 text-status-critical" />}
+        </div>
       </span>
-      {invalid && hint && <span className="text-[11px] text-status-critical">{hint}</span>}
+      {invalid && hint && <span className="text-[11px] leading-tight text-status-critical">{hint}</span>}
     </label>
   );
 }
@@ -171,7 +178,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const selectCls =
-  "w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15";
+  "h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15";
 
 /** Figma 02 Doctor Screens · m1-assessment-form (2:1346). */
 function DiabetesForm() {
@@ -183,9 +190,12 @@ function DiabetesForm() {
   const [patients, setPatients] = useState<PanelPatient[] | null>(null);
   const [patientId, setPatientId] = useState(preselect ?? "");
   const [form, setForm] = useState<M1Form>(EMPTY);
+  const [touched, setTouched] = useState<Partial<Record<keyof M1Form, boolean>>>({});
   const [draftAt, setDraftAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const touch = (k: keyof M1Form) => setTouched((prev) => ({ ...prev, [k]: true }));
 
   useEffect(() => {
     api<{ patients: PanelPatient[] }>("/api/patients")
@@ -257,12 +267,22 @@ function DiabetesForm() {
     return n(form.bmi);
   }, [form.weight, form.height, form.bmi]);
 
+  const isPlausible = (k: keyof M1Form) => {
+    const v = n(form[k] as string);
+    const r = PLAUSIBLE[k];
+    return v == null || r == null || (v >= r[0] && v <= r[1]);
+  };
+
   const invalid = (k: keyof M1Form) => {
     const v = n(form[k] as string);
     const r = PLAUSIBLE[k];
-    return v != null && r != null && (v < r[0] || v > r[1]);
+    if (v == null || r == null) return false;
+    if (v > r[1]) return true;
+    if (touched[k] && v < r[0]) return true;
+    return false;
   };
-  const anyInvalid = (Object.keys(PLAUSIBLE) as (keyof M1Form)[]).some(invalid);
+
+  const anyInvalid = (Object.keys(PLAUSIBLE) as (keyof M1Form)[]).some((k) => !isPlausible(k));
   const hypertension =
     form.knownHypertension || (n(form.systolic) ?? 0) >= 140 || (n(form.diastolic) ?? 0) >= 90;
   const ready =
@@ -270,6 +290,12 @@ function DiabetesForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    const allTouched = (Object.keys(PLAUSIBLE) as (keyof M1Form)[]).reduce(
+      (acc, k) => ({ ...acc, [k]: true }),
+      {}
+    );
+    setTouched(allTouched);
+
     if (!ready || bmi == null) return;
     setBusy(true);
     setError(null);
@@ -380,29 +406,43 @@ function DiabetesForm() {
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex flex-col gap-7 rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
           <Section title={t("m1.s1")}>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Field label={t("m1.age")} value={form.age} onChange={set("age")} invalid={invalid("age")} hint={t("m1.implausible")} mono={false} />
-              <div className="flex min-w-0 flex-[2] flex-col gap-1.5">
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-1">
+                <Field
+                  label={t("m1.age")}
+                  unit={lang === "fr" ? "ans" : "yrs"}
+                  placeholder="50"
+                  value={form.age}
+                  onChange={set("age")}
+                  onBlur={() => touch("age")}
+                  invalid={invalid("age")}
+                  hint={t("m1.implausible")}
+                  mono={false}
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2">
                 <span className="text-[13px] font-semibold text-slate-900">{t("common.sex")}</span>
-                <div className="flex gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {(["male", "female"] as const).map((g) => (
                     <button
                       key={g}
                       type="button"
                       aria-pressed={form.gender === g}
                       onClick={() => set("gender")(g)}
-                      className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border p-3 text-[13px] ${
-                        form.gender === g ? "border-brand bg-[#e6f4ea] font-bold text-brand" : "border-slate-200 font-medium text-slate-500"
+                      className={`flex h-11 min-w-0 items-center gap-2 rounded-lg border px-3.5 text-[13px] transition-colors ${
+                        form.gender === g
+                          ? "border-brand bg-[#e6f4ea] font-bold text-brand"
+                          : "border-slate-200 bg-slate-50 font-medium text-slate-600 hover:bg-slate-100"
                       }`}
                     >
                       <span
                         className={`flex size-4 shrink-0 items-center justify-center rounded-full border ${
-                          form.gender === g ? "border-2 border-brand" : "border-slate-200"
+                          form.gender === g ? "border-2 border-brand" : "border-slate-300"
                         }`}
                       >
                         {form.gender === g && <span className="size-2 rounded-full bg-brand" />}
                       </span>
-                      {t(g === "male" ? "m1.male" : "m1.female")}
+                      <span className="truncate">{t(g === "male" ? "m1.male" : "m1.female")}</span>
                     </button>
                   ))}
                 </div>
@@ -411,18 +451,40 @@ function DiabetesForm() {
           </Section>
 
           <Section title={t("m1.s2")}>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Field label={t("m1.weight")} unit="kg" value={form.weight} onChange={set("weight")} invalid={invalid("weight")} hint={t("m1.implausible")} mono={false} />
-              <Field label={t("m1.height")} unit="cm" value={form.height} onChange={set("height")} invalid={invalid("height")} hint={t("m1.implausible")} mono={false} />
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-3">
+              <Field
+                label={t("m1.weight")}
+                unit="kg"
+                placeholder="70"
+                value={form.weight}
+                onChange={set("weight")}
+                onBlur={() => touch("weight")}
+                invalid={invalid("weight")}
+                hint={t("m1.implausible")}
+                mono={false}
+              />
+              <Field
+                label={t("m1.height")}
+                unit="cm"
+                placeholder="170"
+                value={form.height}
+                onChange={set("height")}
+                onBlur={() => touch("height")}
+                invalid={invalid("height")}
+                hint={t("m1.implausible")}
+                mono={false}
+              />
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-slate-900">{t("m1.bmi")}</span>
+                <span className="truncate text-[13px] font-semibold text-slate-900" title={t("m1.bmi")}>
+                  {t("m1.bmi")}
+                </span>
                 {n(form.weight) && n(form.height) ? (
-                  <span className="flex items-center justify-between rounded-lg bg-slate-100 p-3">
+                  <span className="flex h-11 items-center justify-between rounded-lg border border-slate-200 bg-slate-100 px-3.5">
                     <span className="font-mono text-sm font-bold text-slate-900">{bmi}</span>
                     <span className={`text-xs font-bold ${bmiTone}`}>{bmiLabel}</span>
                   </span>
                 ) : (
-                  <span className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-100 p-3">
+                  <span className="flex h-11 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-100 px-3.5 focus-within:border-brand focus-within:bg-white focus-within:ring-2 focus-within:ring-brand/15">
                     <input
                       type="number"
                       step="any"
@@ -430,7 +492,7 @@ function DiabetesForm() {
                       onChange={(e) => set("bmi")(e.target.value)}
                       placeholder="—"
                       aria-label={t("m1.bmi")}
-                      className="w-full min-w-0 bg-transparent font-mono text-sm font-bold text-slate-900 outline-none"
+                      className="w-full min-w-0 bg-transparent font-mono text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400"
                     />
                     {bmi != null && <span className={`shrink-0 text-xs font-bold ${bmiTone}`}>{bmiLabel}</span>}
                   </span>
@@ -440,31 +502,47 @@ function DiabetesForm() {
           </Section>
 
           <Section title={t("m1.s3")}>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Field label={t("m1.glucose")} unit="mg/dL" value={form.glucose} onChange={set("glucose")} invalid={invalid("glucose")} hint={t("m1.implausibleGlucose")} />
-              <Field label={t("m1.hba1c")} unit="%" value={form.hba1c} onChange={set("hba1c")} invalid={invalid("hba1c")} hint={t("m1.implausibleHba1c")} />
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-slate-900">{t("m1.bp")}</span>
-                <div className="flex gap-2">
-                  {(["systolic", "diastolic"] as const).map((k) => (
-                    <span
-                      key={k}
-                      className={`flex min-w-0 flex-1 items-center justify-between gap-1 rounded-lg border p-3 ${
-                        invalid(k) ? "border-status-critical bg-[#fef2f2]" : "border-slate-200 bg-slate-50"
-                      }`}
-                    >
-                      <input
-                        type="number"
-                        value={form[k]}
-                        onChange={(e) => set(k)(e.target.value)}
-                        aria-label={k === "systolic" ? t("pp.v.sys") : t("pp.v.dia")}
-                        className="w-full min-w-0 bg-transparent font-mono text-sm font-semibold text-slate-900 outline-none"
-                      />
-                      <span className="text-[10px] text-slate-500">{k === "systolic" ? "SYS" : "DIA"}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                label={t("m1.glucose")}
+                unit="mg/dL"
+                placeholder="100"
+                value={form.glucose}
+                onChange={set("glucose")}
+                onBlur={() => touch("glucose")}
+                invalid={invalid("glucose")}
+                hint={t("m1.implausibleGlucose")}
+              />
+              <Field
+                label={t("m1.hba1c")}
+                unit="%"
+                placeholder="5.7"
+                value={form.hba1c}
+                onChange={set("hba1c")}
+                onBlur={() => touch("hba1c")}
+                invalid={invalid("hba1c")}
+                hint={t("m1.implausibleHba1c")}
+              />
+              <Field
+                label={`${t("pp.v.bp")} — ${t("pp.v.sys")} (SYS)`}
+                unit="mmHg"
+                placeholder="120"
+                value={form.systolic}
+                onChange={set("systolic")}
+                onBlur={() => touch("systolic")}
+                invalid={invalid("systolic")}
+                hint={t("m1.implausible")}
+              />
+              <Field
+                label={`${t("pp.v.bp")} — ${t("pp.v.dia")} (DIA)`}
+                unit="mmHg"
+                placeholder="80"
+                value={form.diastolic}
+                onChange={set("diastolic")}
+                onBlur={() => touch("diastolic")}
+                invalid={invalid("diastolic")}
+                hint={t("m1.implausible")}
+              />
             </div>
           </Section>
 
@@ -478,9 +556,9 @@ function DiabetesForm() {
           </Section>
 
           <Section title={t("m1.s5")}>
-            <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-[13px] font-semibold text-slate-900">
-                {t("m1.activity")}
+                <span className="truncate">{t("m1.activity")}</span>
                 <select className={selectCls} value={form.activity} onChange={(e) => set("activity")(e.target.value as M1Form["activity"])}>
                   {(["sedentary", "low", "moderate", "active"] as const).map((a) => (
                     <option key={a} value={a}>
@@ -490,7 +568,7 @@ function DiabetesForm() {
                 </select>
               </label>
               <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-[13px] font-semibold text-slate-900">
-                {t("m1.smoking")}
+                <span className="truncate">{t("m1.smoking")}</span>
                 <select className={selectCls} value={form.smoking} onChange={(e) => set("smoking")(e.target.value)}>
                   <option value="never">{t("m1.smoke.never")}</option>
                   <option value="former">{t("m1.smoke.former")}</option>
