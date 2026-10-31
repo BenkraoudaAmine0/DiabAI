@@ -54,6 +54,7 @@ def _file_info(path: Path) -> dict:
 
 def detected_models() -> list[dict]:
     """What this API server can actually run right now."""
+    s = get_settings()
     out: list[dict] = []
     main = diabetes_service.DIABETES_DIR / diabetes_service.REQUIRED_FILES[0]
     missing = [f for f in diabetes_service.REQUIRED_FILES if not (diabetes_service.DIABETES_DIR / f).exists()]
@@ -65,13 +66,20 @@ def detected_models() -> list[dict]:
         except Exception:
             pass
     out.append(entry)
+
+    vision_avail = vision_service.availability()
     for scan_type in vision_service.SCAN_TYPES:
         found = vision_service._find_model_file(scan_type)
-        entry = {"key": scan_type, "task": VISION_TASK[scan_type], "loaded": found is not None}
+        is_avail = found is not None or vision_avail.get(scan_type, False)
+        entry = {"key": scan_type, "task": VISION_TASK[scan_type], "loaded": is_avail}
         if found is not None:
             entry.update(_file_info(found))
+        elif is_avail and s.hf_vision_space:
+            entry.update({
+                "artifact": f"hf:{s.hf_vision_space}/{scan_type}",
+            })
         out.append(entry)
-    s = get_settings()
+
     out.append({"key": "embeddings", "task": "embeddings", "loaded": True, "artifact": embeddings.model_id()})
     out.append({"key": "llm", "task": "llm", "loaded": bool(s.gemini_api_key), "artifact": f"gemini:{s.gemini_model}"})
     return out
