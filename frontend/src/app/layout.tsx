@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n";
+import { Analytics } from "@vercel/analytics/next";
 
 // Figma design system: Inter for the interface, IBM Plex Mono for lab values
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -28,6 +29,7 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>{children}</AuthProvider>
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   );
